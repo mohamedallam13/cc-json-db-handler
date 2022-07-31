@@ -1,0 +1,15 @@
+{
+  "timeZone": "Europe/Amsterdam",
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "CCLIBRARIES",
+        "version": "0",
+        "libraryId": "1M-HVmwVCGEcG5fEOfYPWkNat4p8LZidFiC6vsUBtGTt74gc19ASNmJRh",
+        "developmentMode": true
+      }
+    ]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8"
+}
