@@ -40,7 +40,8 @@
   let OPEN_DB = {
     CCONE_1: {
       properties: {
-        isChanged: true
+        isChanged: true,
+        main: "CCONE"
       },
       toWrite: {
         index: {},
@@ -49,8 +50,9 @@
 
     },
     CCGS1R1: {
-      propertties: {
-        isChanged: true
+      properties: {
+        isChanged: true,
+        main: "CCG"
       },
       toWrite: {
         index: {},
@@ -68,7 +70,7 @@
       addToDB,
       updateInDB,
       lookUp,
-      saveAndClose
+      saveToDBFiles
     }
     return DBMANAGER;
   }
@@ -77,8 +79,25 @@
     return Toolkit.readFromJSON(indexFileId);
   }
 
-  function saveAndClose() {
+  function saveToDBFiles() {
+    Object.keys(OPEN_DB).forEach(dbFragment => {
+      const { properties, toWrite } = OPEN_DB[dbFragment];
+      const { isChanged, main } = properties;
+      if (!isChanged) return
+      const { fileId } = INDEX[main].dbFragments[dbFragment];
+      if (fileId == "") {
+        createNewFile(main, dbFragment, properties);
+        return
+      }
+      Toolkit.writeToJSON(toWrite, fileId);
+    })
+  }
 
+  function createNewFile(main, dbFragment, properties){
+    const { dbFragments, properties } = INDEX[main];
+    const { rootFolder, filesPrefix } = properties;
+    fileId = createDBFile(toWrite, rootFolder, filesPrefix, dbFragment);
+    dbFragments[dbFragment].fileId = fileId;
   }
 
   function addToDB(entry, { dbMain, dbFragment }) {
@@ -120,8 +139,23 @@
     return entry;
   }
 
-  function CheckIfInIndexAndIfInOpen() {
+  function createDBFile(toWrite, rootFolder, filesPrefix, dbFragment) {
+    const fileName = filesPrefix + "_" + dbFragment;
+    return Toolkit.createJSON(fileName, rootFolder, toWrite);
+  }
 
+  function CheckIfInIndexAndIfInOpen(dbMain, dbFragment) {
+    if(!INDEX[dbMain]){
+      console.log("No configs found for this DB")
+      return
+    }
+    const {dbFragments} = INDEX[dbMain];
+    if(!dbFragments[dbFragment]){
+      dbFragments[dbFragment] = new IndexEntry();
+    }
+    if(!OPEN_DB[dbFragment]){
+      openDBFragment(dbFragment, fileId);
+    }
   }
 
   function openDBFragment(dbFragment, fileId) {
@@ -144,11 +178,12 @@
   function createNewFragment(dbMain) {
     const lastDBFragment = getLastCreatedFragment(dbMain);
     const countingRegex = /_\d/g
+    let newFragment
     if (countingRegex.test(lastDBFragment)) {
       const count = parseInt(paragraph.match(countingRegex)[1]);
-      const newFragment = lastDBFragment.replace(countingRegex, "") + "_" + count++;
+      newFragment = lastDBFragment.replace(countingRegex, "") + "_" + count++;
     } else {
-      const newFragment = lastDBFragment + "_2";
+      newFragment = lastDBFragment + "_2";
     }
     INDEX[dbMain].dbFragments[newFragment] = new IndexEntry();
   }
@@ -166,8 +201,9 @@
 
   }
 
-  function OpenDBProperties() {
+  function OpenDBProperties(dbMain) {
     this.isChanged = true
+    this.main = dbMain
   }
 
   function DBFileObj() {
