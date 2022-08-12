@@ -10,7 +10,8 @@
     CCONE: {
       properties: {
         rootFolder: "",
-        filesPrefix: ""
+        filesPrefix: "",
+        fragmentsList: []
       },
       dbFragments: {
         CCONE_1: {
@@ -22,12 +23,13 @@
     CCG: {
       properties: {
         rootFolder: "",
-        filesPrefix: ""
+        filesPrefix: "",
+        fragmentsList: []
       },
       dbFragments: {
         CCGS1R1: {
           queryArray: [],
-          fileId: ""
+          fileId: "",
         },
         CCGS1R2: {
           queryArray: [],
@@ -65,21 +67,82 @@
 
 
   function init(indexFileId) {
-    INDEX = initiateDB(indexFileId);
+    const INDEX = initiateDB(indexFileId);
+    const OPEN_DB = {};
     const DBMANAGER = {
+      indexFileId,
+      INDEX,
+      OPEN_DB,
       addToDB,
       updateInDB,
       lookUp,
-      saveToDBFiles
+      saveToDBFiles,
+      closeDB,
+      clearDB,
+      destroyDB
     }
     return DBMANAGER;
+  }
+
+  function saveIndex() {
+    Toolkit.writeToJSON(this.INDEX, this.indexFileId);
   }
 
   function initiateDB() {
     return Toolkit.readFromJSON(indexFileId);
   }
 
+
+  function closeDB({ dbMain, dbFragment }) {
+    if (!dbFragment) closeDBMain(dbMain);
+    else closeFragment(dbFragment);
+  }
+
+  function closeDBMain(dbMain) {
+    const { fragmentsList } = INDEX[dbMain].properties;
+    fragmentsList.forEach(closeFragment)
+  }
+
+  function closeFragment(dbFragment) {
+    if (OPEN_DB[dbFragment]) delete OPEN_DB[dbFragment];
+  }
+
+  function clearDB({ dbMain, dbFragment }) {
+    if (!dbFragment) clearDBMain(dbMain);
+    else clearFragment(dbFragment);
+    //saveIndex
+  }
+
+  function clearDBMain(dbMain) {
+    const { fragmentsList } = INDEX[dbMain].properties;
+    fragmentsList.forEach(dbFragment => clearFragment(dbMain, dbFragment))
+  }
+
+  function clearFragment(dbMain, dbFragment) {
+    const { fileId } = INDEX[dbMain].dbFragments[dbFragment];
+    Toolkit.writeToJSON({}, fileId);
+    INDEX[dbMain].dbFragments[dbFragment].queryArray = [];
+  }
+
+  function destroyDB({ dbMain, dbFragment }) {
+    if (!dbFragment) destroyDBMain(dbMain);
+    else destroyFragment(dbFragment);
+    //saveIndex
+  }
+
+  function destroyDBMain(dbMain) {
+    const { fragmentsList } = INDEX[dbMain].properties;
+    fragmentsList.forEach(dbFragment => destroyFragment(dbMain, dbFragment))
+  }
+
+  function destroyFragment(dbFragment) {
+    const { fileId } = INDEX[dbMain].dbFragments[dbFragment];
+    Toolkit.destroyJSON(fileId);
+    delete INDEX[dbMain].dbFragments[dbFragment];
+  }
+
   function saveToDBFiles() {
+    const { INDEX, OPEN_DB } = this;
     Object.keys(OPEN_DB).forEach(dbFragment => {
       const { properties, toWrite } = OPEN_DB[dbFragment];
       const { isChanged, main } = properties;
@@ -91,9 +154,11 @@
       }
       Toolkit.writeToJSON(toWrite, fileId);
     })
+    properties.isChanged = false;
   }
 
-  function createNewFile(main, dbFragment, properties){
+  function createNewFile(main, dbFragment, properties) {
+    const { INDEX } = this;
     const { dbFragments, properties } = INDEX[main];
     const { rootFolder, filesPrefix } = properties;
     fileId = createDBFile(toWrite, rootFolder, filesPrefix, dbFragment);
@@ -101,12 +166,14 @@
   }
 
   function addToDB(entry, { dbMain, dbFragment }) {
+    const { OPEN_DB } = this;
     CheckIfInIndexAndIfInOpen(dbMain, dbFragment)
     if (dbMain && !dbFragment) dbFragment = getLastCreatedFragment(dbMain);
     dbFragment = checkOpenDBSize(dbMain, dbFragment);
     const { key, id } = entry;
     OPEN_DB[dbFragment].toWrite.index[key] = id;
     OPEN_DB[dbFragment].toWrite.data[id] = entry;
+    OPEN_DB[dbFragment].properties.isChanged = true;
   }
 
   function updateInDB(entry, { dbMain, dbFragment }) {
@@ -121,6 +188,7 @@
   }
 
   function lookUpByQueryArray(key, dbMain) {
+    const { INDEX } = this;
     const { dbFragments } = INDEX[dbMain];
     let entry;
     Object.keys(dbFragments).forEach(dbFragment => {
@@ -133,6 +201,7 @@
   }
 
   function lookUpInFragment(key, dbFragment) {
+    const { OPEN_DB } = this;
     const { toWrite } = OPEN_DB[dbFragment];
     const id = toWrite.index[key];
     const entry = toWrite.data[id];
@@ -145,22 +214,31 @@
   }
 
   function CheckIfInIndexAndIfInOpen(dbMain, dbFragment) {
-    if(!INDEX[dbMain]){
+    const { INDEX, OPEN_DB } = this;
+    if (!INDEX[dbMain]) {
       console.log("No configs found for this DB")
       return
     }
-    const {dbFragments} = INDEX[dbMain];
-    if(!dbFragments[dbFragment]){
-      dbFragments[dbFragment] = new IndexEntry();
+    const { dbFragments } = INDEX[dbMain];
+    if (!dbFragment) {
+      dbFragment = createNewFragment(dbMain);
     }
-    if(!OPEN_DB[dbFragment]){
+    if (!dbFragments[dbFragment]) {
+      dbFragments[dbFragment] = new IndexEntry();
+      dbFragments[dbFragment].properties.fragmentsList.push(dbFragment);
+
+    }
+    if (!OPEN_DB[dbFragment]) {
+      const { fileId } = dbFragments[dbFragment];
       openDBFragment(dbFragment, fileId);
     }
   }
 
   function openDBFragment(dbFragment, fileId) {
+    const { OPEN_DB } = this;
     if (OPEN_DB[dbFragment]) return;
-    const fragmentFileObj = Toolkit.readFromJSON(fileId);
+    let fragmentFileObj;
+    if (fileId) fragmentFileObj = Toolkit.readFromJSON(fileId);
     addToOpenDBsObj(dbFragment, fragmentFileObj)
   }
 
@@ -169,17 +247,20 @@
   }
 
   function checkOpenDBSize(dbMain, dbFragment) {
+    const { OPEN_DB } = this;
     const { toWrite } = OPEN_DB[dbFragment];
     const { data } = toWrite;
-    if (data.length >= MAX_ENTRIES_COUNT) return createNewFragment(dbMain);
+    if (data.length >= MAX_ENTRIES_COUNT) return createNewFragment(dbMain, dbFragment);
     return dbFragment;
   }
 
-  function createNewFragment(dbMain) {
-    const lastDBFragment = getLastCreatedFragment(dbMain);
+  function createNewFragment(dbMain, dbFragment) {
+    const { INDEX } = this;
+    const lastDBFragment = dbFragment || getLastCreatedFragment(dbMain);
     const countingRegex = /_\d/g
     let newFragment
-    if (countingRegex.test(lastDBFragment)) {
+    if (!lastDBFragment) newFragment = dbMain + "_1";
+    else if (countingRegex.test(lastDBFragment)) {
       const count = parseInt(paragraph.match(countingRegex)[1]);
       newFragment = lastDBFragment.replace(countingRegex, "") + "_" + count++;
     } else {
@@ -189,10 +270,11 @@
   }
 
   function getLastCreatedFragment(dbMain) {
-    const { dbFragments } = INDEX[dbMain];
-    const dbFragmentArray = Object.keys(dbFragments);
-    const fragmentsCount = dbFragmentArray.length;
-    return dbFragmentArray[fragmentsCount - 1]
+    const { INDEX } = this;
+    const { properties } = INDEX[dbMain];
+    const { fragmentsList } = properties;
+    const fragmentsCount = fragmentsList.length;
+    if (fragmentsCount != 0) return dbFragmentArray[fragmentsCount - 1]
   }
 
   function OpenDBEntry(fragmentFileObj) {
