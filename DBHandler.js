@@ -267,6 +267,7 @@
       newFragment = lastDBFragment + "_2";
     }
     INDEX[dbMain].dbFragments[newFragment] = new IndexEntry();
+    //saveIndex
   }
 
   function getLastCreatedFragment(dbMain) {

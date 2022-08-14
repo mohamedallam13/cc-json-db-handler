@@ -68,6 +68,10 @@
         }
     }
 
+    function add() {
+
+    }
+
     function getIndex(indexFileId) {
         return Toolkit.readFromJSON(indexFileId);
     }
@@ -76,7 +80,11 @@
 
     }
 
-    function saveAndClose() {
+    function save() {
+
+    }
+
+    function update() {
 
     }
 
@@ -87,6 +95,16 @@
     }
 
     function DBObj() {
+        this.add = add()
+        this.update = update()
+        this.lookUp = lookUp()
+        this.save = save()
+        this.close = close()
+        this.clear = clear()
+    }
+
+
+    function saveToFile() {
 
     }
 
