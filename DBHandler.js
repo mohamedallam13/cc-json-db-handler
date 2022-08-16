@@ -50,7 +50,7 @@
 
     function clearFragment(dbMain, dbFragment) {
       const { fileId } = INDEX[dbMain].dbFragments[dbFragment];
-      Toolkit.writeToJSON({}, fileId);
+      Toolkit.writeToJSON(fileId, {});
       INDEX[dbMain].dbFragments[dbFragment].queryArray = [];
     }
 
@@ -138,7 +138,7 @@
     }
 
     function createDBFile(toWrite, rootFolder, filesPrefix, dbFragment) {
-      const fileName = filesPrefix + "_" + dbFragment + '.json';
+      const fileName = filesPrefix + "_" + dbFragment;
       return Toolkit.createJSON(fileName, rootFolder, toWrite);
     }
 
@@ -280,41 +280,42 @@ function test() {
   const COUNT = 500;
   const db = JSON_DB_HANDLER.init(indexId);
 
-  console.log("Add: from")
-  for (let i = 0; i < COUNT; i++) {
-    let request = {
-      key: generateRandomEmail(),
-      id: i + 1,
-      name: "Mohamed Allam"
-    }
-    if (i == 100) {
-      let x = 0;
-    }
-    db.addToDB(request, { dbMain: "CCONE" });
-  }
-  console.log("Add: to")
+  // console.log("Add: from")
+  // for (let i = 0; i < COUNT; i++) {
+  //   let request = {
+  //     key: generateRandomEmail(),
+  //     id: i + 1,
+  //     name: "Mohamed Allam"
+  //   }
+  //   if (i == 100) {
+  //     let x = 0;
+  //   }
+  //   db.addToDB(request, { dbMain: "CCONE" });
+  // }
+  // console.log("Add: to")
 
-  /////
-  console.log("Lookup: from")
-  const entry = db.lookUp("wztlc6sk@gmail.com", { dbMain: "CCONE" });
-  console.log(entry)
-  console.log("Lookup: to")
-  /////
+  // /////
+  // console.log("Lookup: from")
+  // const entry = db.lookUp("wztlc6sk@gmail.com", { dbMain: "CCONE" });
+  // console.log(entry)
+  // console.log("Lookup: to")
+  // /////
 
-  /////
-  console.log("Save: from")
-  db.saveToDBFiles();
-  console.log("Save: to")
-  /////
-
-
+  // /////
+  // console.log("Save: from")
+  // db.saveToDBFiles();
+  // console.log("Save: to")
+  // /////
 
 
+  console.log("Destroy: from")
+  db.clearDB({ dbMain: "CCONE" })
+  console.log("Destroy: to")
 
 
-  // console.log("Destroy: from")
-  // db.destroyDB({ dbMain: "CCONE" });
-  // console.log("Destroy: to")
+  console.log("Destroy: from")
+  db.destroyDB({ dbMain: "CCONE" });
+  console.log("Destroy: to")
   const l = 0;
   function generateRandomEmail() {
     var chars = 'abcdefghijklmnopqrstuvwxyz1234567890';
