@@ -1,6 +1,13 @@
 {
     "scriptId": "1okytPXaZ1vJMeFsOWA8AbhXdVRTu0CtijoIzrKFaIqvlIwaQZy5qZ1-a",
     "filePushOrder": [
-
+        "Models- Applications.js",
+        "Models- CCOne.js",
+        "Models- Confessions.js",
+        "DBHandler.js",
+        "ORM.js",
+        "API.js",
+        "Data Clean.js",
+        "Seed.js"
     ]
 }
