@@ -1,37 +1,37 @@
-// ; (function (root, factory) {
-//   root.USER = factory()
-// })(this, function () {
+; (function (root, factory) {
+  root.USER = factory()
+})(this, function () {
 
-//   const { Schema, Model } = ORM;
+  const { Schema, Model } = ORM;
 
-//   const DBMAIN = "CCONE"
+  const DBMAIN = "CCONE"
 
-//   const userSchemaMap = {
-//     confession: {
-//       db: "core",
-//       validate: () => { },
-//       defaultValue: "",
-//       type: "string"
-//     },
-//     sn: {
-//       db: "core"
-//     },
-//     category: {
-//       db: "core"
+  const userSchemaMap = {
+    confession: {
+      db: "core",
+      validate: () => { },
+      defaultValue: "",
+      type: "string"
+    },
+    sn: {
+      db: "core"
+    },
+    category: {
+      db: "core"
 
-//     },
-//     status: {
-//       db: "status",
-//       enums: ['posted', 'rejected', 'skipped']
-//     }
-//   };
+    },
+    status: {
+      db: "status",
+      enums: ['posted', 'rejected', 'skipped']
+    }
+  };
 
 
-//   const userSchema = new Schema(confessionSchemaMap,
-//     { dbMain: DBMAIN })
+  const userSchema = new Schema(userSchemaMap,
+    { dbMain: DBMAIN })
 
-//   const model = new Model(userSchema, {});
+  const model = new Model(userSchema, {});
 
-//   return model
+  return model
 
-// })
+})
