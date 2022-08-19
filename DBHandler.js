@@ -143,6 +143,7 @@
     }
 
     function getProperFragment(dbMain, dbFragment) {
+      //This function does the following: checks the index if the main adn the fragment exists, checks if the fragment is part of cumulative or stand alone db and returns the fragment name based on that, and adds the fragment to the OPEN_DB
       if (!INDEX[dbMain]) {
         console.log("No configs found for this DB")
         return

@@ -1,33 +1,37 @@
-; (function (root, factory) {
-  root.CONFESSION = factory()
-})(this, function () {
+// ; (function (root, factory) {
+//   root.CONFESSION = factory()
+// })(this, function () {
 
-  const { Schema, Model } = ORM;
+//   const { Schema, Model } = ORM;
 
-  const confessionSchemaMap = {
-    confession: {
-      db: "core",
-      validate: () => { },
-      defaultValue: "",
-      type: "string"
-    },
-    sn: {
-      db: "core"
-    },
-    category: {
-      db: "core"
+//   const DBMAIN = "CCMAIN"
 
-    },
-    status: {
-      db: "status",
-      enums: ['posted', 'rejected', 'skipped']
-    }
-  };
+//   const confessionSchemaMap = {
+//     confession: {
+//       db: "core",
+//       validate: () => { },
+//       defaultValue: "",
+//       type: "string"
+//     },
+//     sn: {
+//       db: "core"
+//     },
+//     category: {
+//       db: "core"
+
+//     },
+//     status: {
+//       db: "status",
+//       enums: ['posted', 'rejected', 'skipped']
+//     }
+//   };
 
 
-  const confessionSchema = new Schema(confessionSchemaMap,
-    { dbMain: "CCMAIN" })
+//   const confessionSchema = new Schema(confessionSchemaMap,
+//     { dbMain: DBMAIN })
 
-  return new Model(confessionSchema, {})
+//   const model = new Model(confessionSchema, {});
 
-})
+//   return model
+
+// })

@@ -1,18 +1,37 @@
 // ; (function (root, factory) {
-//     root.USER = factory()
+//   root.USER = factory()
 // })(this, function () {
 
-//     const { Schema, modelCreate } = ORM;
+//   const { Schema, Model } = ORM;
 
-//     const userSchemaMap = {
+//   const DBMAIN = "CCONE"
 
-//     };
+//   const userSchemaMap = {
+//     confession: {
+//       db: "core",
+//       validate: () => { },
+//       defaultValue: "",
+//       type: "string"
+//     },
+//     sn: {
+//       db: "core"
+//     },
+//     category: {
+//       db: "core"
+
+//     },
+//     status: {
+//       db: "status",
+//       enums: ['posted', 'rejected', 'skipped']
+//     }
+//   };
 
 
-//     const schema = new Schema(confessionSchemaMap,
-//         { dbMain: "CCONE" })
-//     return modelCreate(schema)
+//   const userSchema = new Schema(confessionSchemaMap,
+//     { dbMain: DBMAIN })
+
+//   const model = new Model(userSchema, {});
+
+//   return model
 
 // })
-
-

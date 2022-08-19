@@ -2,63 +2,206 @@
   root.SEED = factory()
 })(this, function () {
 
-  const { imp, Toolkit } = CCLIBRARIES
+  const { imp, Toolkit, TRIGGERS_MANAGER, REFERENCES_MANAGER } = CCLIBRARIES
+  const { startConnection } = ORM
 
-  const SOURCES_FILE_ID = "1KYrju7TNNTJKO29IXAMPX5sJ-_uuQyDZ";
-  const JSON_DB_INDEX = "1SQHe3W33uCD20bn-yWhpO89cqC_VEkXV"
+  const MASTER_INDEX_FILE_ID = "1ohC9kPnMxyptp8SadRBGAofibGiYTTev";
   const TARGETED_BRANCHES = ["Events"]
+  const TARGETED_DIVISIONS = ["CCG"];
+
+  const REQUIRED_REFERENCES = ["CCJSONsDBSuperIndex", "sourcesIndexed"];
+
+  let referencesObj;
+  let sourcesIndex;
+  let sourcesUpdateObj;
 
   function run() {
-    JSON_DB_HANDLER.initiateDB(JSON_DB_INDEX); // Start the Database
-    const aggregatedSources = getSources(); // Get sources data from sources file and read sources
-    aggregatedSources.forEach(processSource); // Process Every source
-    const stop = 1
+    startTriggers();
+    getReferences();
+    const aggregatedSources = extractSources(); // Get sources data from sources file and read sources
+    dbStart();
+    aggregatedSources.forEach((sourceObj, i) => {
+      const { eventIndex } = sourceObj
+      if (eventIndex > 1) return
+      processSource(sourceObj)
+    }); // Process Every source
+    console.log(sourcesIndex["Events"]["CCG"])
+    saveSourcesIndex();
+    stopTriggers()
   }
 
-  function getSources() {
-    const allBranchesSources = Toolkit.readFromJSON(SOURCES_FILE_ID);
-    return extractSources(allBranchesSources);
-
-
+  function clearCache() {
+    stopTriggers()
   }
 
-  function extractSources(allBranchesSources) {
-    const aggregatedSources = getAggregatedSources(allBranchesSources);
-    aggregatedSources.forEach(augmentData);
+  function reset() {
+    getReferences();
+    resetSourcesIndex();
+    referencesObj.sourcesIndexed.update();
+  }
+
+  function resetSourcesIndex() {
+    Object.entries(sourcesIndex).forEach(([branchName, allDivisionObj]) => {
+      Object.entries(allDivisionObj).forEach(([divisionName, allActivitiesArray]) => {
+        allActivitiesArray.forEach((sourceObj, i) => {
+          sourcesIndex[branchName][divisionName][i].counter = 0;
+          sourcesIndex[branchName][divisionName][i].seeded = false;
+        })
+      })
+    })
+  }
+
+  function getReferences() {
+    getRequiredIndexes();
+    getSourcesIndex();
+  }
+
+  function dbStart() {
+    const { CCJSONsDBSuperIndex } = referencesObj;
+    startConnection(CCJSONsDBSuperIndex.fileContent); // Start the Database
+  }
+
+  function getRequiredIndexes() {
+    referencesObj = REFERENCES_MANAGER.init(MASTER_INDEX_FILE_ID).requireFiles(REQUIRED_REFERENCES).requiredFiles;
+  }
+
+  function getSourcesIndex() {
+    sourcesIndex = referencesObj.sourcesIndexed.fileContent;
+  }
+
+  function saveSourcesIndex() {
+    augmentToSourcesIndex();
+    referencesObj.sourcesIndexed.update();
+  }
+
+  function startTriggers() {
+    TRIGGERS_MANAGER.setContinutaionTrigger("run");
+    sourcesUpdateObj = TRIGGERS_MANAGER.getContVariable("sourcesUpdateObj") || {};
+  }
+
+  function stopTriggers() {
+    TRIGGERS_MANAGER.deleteContinuationTrigger("run");
+  }
+
+  function extractSources() {
+    const aggregatedSources = getAggregatedSources().filter(filterOutSeeded);
+    aggregatedSources.forEach(getDataFromSource);
     return aggregatedSources;
   }
 
-  function getAggregatedSources(allBranchesSources) {
+  function getAggregatedSources() {
+    console.log("Started Aggregation...")
     let aggregatedSources = [];
     TARGETED_BRANCHES.forEach(branch => {
-      const allActivitiesObj = allBranchesSources[branch];
-      Object.keys(allActivitiesObj).forEach(activityName => aggregatedSources = [...aggregatedSources, ...allActivitiesObj[activityName]])
+      const allDivisionsObj = sourcesIndex[branch];
+      Object.entries(allDivisionsObj).forEach(([divisionName, activitiesArray]) => {
+        console.log(`Started Aggregation of ${divisionName}...`)
+        if (!TARGETED_DIVISIONS.includes(divisionName)) return;
+        const newActivitiesArray = activitiesArray.map(activityObj => {
+          const { branch, primaryClassifierCode, secondaryClassifierCode, seeded, counter } = activityObj;
+          const eventIndex = getIndex(branch, primaryClassifierCode, secondaryClassifierCode);
+          addToUpdateObj(primaryClassifierCode, eventIndex, seeded, counter)
+          return { eventIndex, ...activityObj }
+        })
+        aggregatedSources = [...aggregatedSources, ...newActivitiesArray]
+      })
     })
     return aggregatedSources
   }
 
-  function augmentData(sourceObj) {
-    const { ssid, sheetName, headerRow, skipRows } = sourceObj;
+  function filterOutSeeded(sourcesObj) {
+    const { eventIndex, primaryClassifierCode } = sourcesObj;
+    return !sourcesUpdateObj[primaryClassifierCode][eventIndex].seeded;
+  }
+
+  function getDataFromSource(sourceObj) {
+    const { ssid, sheetName, headerRow, skipRows, column } = sourceObj;
     const parseObj = { headerRow, skipRows }
     const ssMan = imp.createSpreadsheetManager(ssid).addSheets([sheetName]);
     const sheetObj = ssMan.sheets[sheetName]
     sheetObj.parseSheet(parseObj).objectifyValues();
     sourceObj.entries = sheetObj.objectifiedValues;
+    if (column) {
+      sheetObj.columnToArray(column);
+      sourceObj[column] = sheetObj.column;
+    };
   }
 
   function processSource(sourceObj) {
-    const { entries, secondaryClassifierCode } = sourceObj;
-    entries.forEach(entry => {
-      API.handleRequest(entry, secondaryClassifierCode);
+    const { entries, primaryClassifierCode, eventIndex } = sourceObj;
+    const { counter } = sourcesUpdateObj[primaryClassifierCode][eventIndex]
+    entries.slice(counter).forEach((entry, i) => {
+      console.log(entry);
+      // API.handleRequest(entry, secondaryClassifierCode);
+      addToCounters(primaryClassifierCode, eventIndex, i);
+    })
+    markSourceAsDone(primaryClassifierCode, eventIndex);
+  }
+
+  function getIndex(branch, primaryClassifierCode, secondaryClassifierCode) {
+    const eventLevelArray = sourcesIndex[branch][primaryClassifierCode];
+    let eventIndex;
+    eventLevelArray.forEach((entry, i) => {
+      if (entry.secondaryClassifierCode == secondaryClassifierCode) {
+        eventIndex = i;
+      }
+    })
+    return eventIndex
+  }
+
+  function addToUpdateObj(primaryClassifierCode, eventIndex, seeded, counter = 0) {
+    if (!sourcesUpdateObj[primaryClassifierCode]) {
+      sourcesUpdateObj[primaryClassifierCode] = {};
+    }
+    if (!sourcesUpdateObj[primaryClassifierCode][eventIndex]) {
+      sourcesUpdateObj[primaryClassifierCode][eventIndex] = {};
+    }
+    sourcesUpdateObj[primaryClassifierCode][eventIndex].seeded = seeded;
+    sourcesUpdateObj[primaryClassifierCode][eventIndex].counter = counter;
+
+  }
+
+  function addToCounters(primaryClassifierCode, eventIndex, i) {
+    sourcesUpdateObj[primaryClassifierCode][eventIndex].counter = i + 1;
+    TRIGGERS_MANAGER.addContVariable("sourcesUpdateObj", sourcesUpdateObj);
+  }
+
+  function markSourceAsDone(primaryClassifierCode, eventIndex) {
+    sourcesUpdateObj[primaryClassifierCode][eventIndex].seeded = true;
+    TRIGGERS_MANAGER.addContVariable("sourcesUpdateObj", sourcesUpdateObj);
+  }
+
+  function augmentToSourcesIndex() {
+    Object.entries(sourcesIndex).forEach(([branchName, allDvisionsObj]) => {
+      Object.entries(allDvisionsObj).forEach(([divisionName, activitiesArray]) => {
+        const updateObjArr = sourcesUpdateObj[divisionName];
+        activitiesArray.forEach((activityObj, i) => {
+          if (!updateObjArr) return
+          sourcesIndex[branchName][divisionName][i] = {
+            ...sourcesIndex[branchName][divisionName][i],
+            ...updateObjArr[i]
+          }
+        })
+      })
     })
   }
 
   return {
-    run
+    run,
+    reset,
+    clearCache
   }
 
 })
 
 function run() {
   SEED.run();
+}
+
+function reset() {
+  SEED.reset();
+}
+
+function clearCache() {
+  SEED.clearCache();
 }

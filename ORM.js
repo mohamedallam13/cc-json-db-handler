@@ -6,11 +6,8 @@
 
   const { init } = JSON_DB_HANDLER;
 
-  function startConnection(indexFileIdsObjArray) {
-    if (!Array.isArray(indexFileIdsObjArray)) indexFileIdsObjArray = [indexFileIdsObjArray];
-    const connectionsObj = {};
-    indexFileIdsObjArray.forEach(connectionInfoObj => {
-      const { connectionLabel, indexFileId } = connectionInfoObj;
+  function startConnection(indexFileIdsObj) {
+    Object.entries(indexFileIdsObj).forEach(([connectionLabel, indexFileId]) => {
       connectionsObj[connectionLabel] = init(indexFileId);
     })
     return connectionsObj
@@ -61,7 +58,7 @@
       const { dbMain } = this.schema.properties
       const { dbFragment } = this.options
 
-      const splitProperObj = schema.getObj(request);
+      const splitProperObj = schema.getProperObj(request);
       Object.entries(splitProperObj).forEach(([db, obj]) => {
         connectionsObj[db].addToDB(obj, { dbMain, dbFragment });
       });
@@ -78,6 +75,7 @@
   }
 
   return {
+    connectionsObj,
     startConnection,
     Schema,
     Model
