@@ -1,5 +1,5 @@
 ; (function (root, factory) {
-  root.USER = factory()
+  root.CCER = factory()
 })(this, function () {
 
   const { Schema, Model } = ORM;
@@ -7,23 +7,7 @@
   const DBMAIN = "CCONE"
 
   const userSchemaMap = {
-    confession: {
-      db: "core",
-      validate: () => { },
-      defaultValue: "",
-      type: "string"
-    },
-    sn: {
-      db: "core"
-    },
-    category: {
-      db: "core"
 
-    },
-    status: {
-      db: "status",
-      enums: ['posted', 'rejected', 'skipped']
-    }
   };
 
 

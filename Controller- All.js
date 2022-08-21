@@ -1,13 +1,13 @@
 ; (function (root, factory) {
-  root.API = factory()
+  root.CONTROLLER = factory()
 })(this, function () {
 
-  const { addToDB, updateInDB, lookupDB } = JSON_DB_HANDLER;
+  const { addToDB, updateInDB, lookupDB } = ORM;
   const CCONE = "CCOne";
 
-  function handleRequest(request, dbName) {
-    const { userId } = getUserId(request);
-    const { applicationId } = getApplicationId(request, dbName);
+  function handleCompiledRequest(request) {
+    const { userId } = getUser(request);
+    const { applicationId } = getApplication(request);
     const { fillCheck, roles } = request
     if (!applicationId) {
       addNewApplicationToDB(request, dbName);
@@ -33,20 +33,23 @@
   }
 
 
-  function getApplicationId(request, dbName) {
-    lookupDB(request, dbName)
+  function getApplication(request) {
+    const { email, eventId } = request;
+    return CCAPPLICATION[eventId].findByKey(email);
   }
 
-  function getUserId(request) {
-    lookupDB(request, CCONE)
+  function getUser(request) {
+    const { email } = request;
+    return CCER.findByKey(email)
   }
 
-  function addNewApplicationToDB(request, dbName) {
-    addToDB(request, dbName)
+  function addNewApplicationToDB(request) {
+    const { eventId } = request;
+    CCAPPLICATION[eventId].add(request)
   }
 
   function addNewUserToDB(request) {
-    addToDB(request, CCONE)
+    CCER.add(request)
   }
 
   function updateApplicationInDB(request, dbName) {

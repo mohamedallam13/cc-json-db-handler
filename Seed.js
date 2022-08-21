@@ -3,7 +3,7 @@
 })(this, function () {
 
   const { imp, Toolkit, TRIGGERS_MANAGER, REFERENCES_MANAGER } = CCLIBRARIES
-  const { startConnection } = ORM
+  const { startConnection, clearDB } = ORM
 
   const MASTER_INDEX_FILE_ID = "1ohC9kPnMxyptp8SadRBGAofibGiYTTev";
   const TARGETED_BRANCHES = ["Events"]
@@ -15,17 +15,18 @@
   let sourcesIndex;
   let sourcesUpdateObj;
 
+  // let n = 1;
+
   function run() {
     startTriggers();
     getReferences();
     const aggregatedSources = extractSources(); // Get sources data from sources file and read sources
     dbStart();
     aggregatedSources.forEach((sourceObj, i) => {
-      const { eventIndex } = sourceObj
-      if (eventIndex > 1) return
+      // if(sourceObj.eventIndex > n) return;
       processSource(sourceObj)
     }); // Process Every source
-    console.log(sourcesIndex["Events"]["CCG"])
+    augmentToSourcesIndex();
     saveSourcesIndex();
     stopTriggers()
   }
@@ -37,7 +38,8 @@
   function reset() {
     getReferences();
     resetSourcesIndex();
-    referencesObj.sourcesIndexed.update();
+    dbClear();
+    saveSourcesIndex();
   }
 
   function resetSourcesIndex() {
@@ -61,6 +63,11 @@
     startConnection(CCJSONsDBSuperIndex.fileContent); // Start the Database
   }
 
+  function dbClear() {
+    dbStart();
+    clearDB();
+  }
+
   function getRequiredIndexes() {
     referencesObj = REFERENCES_MANAGER.init(MASTER_INDEX_FILE_ID).requireFiles(REQUIRED_REFERENCES).requiredFiles;
   }
@@ -70,7 +77,6 @@
   }
 
   function saveSourcesIndex() {
-    augmentToSourcesIndex();
     referencesObj.sourcesIndexed.update();
   }
 
@@ -98,15 +104,20 @@
         console.log(`Started Aggregation of ${divisionName}...`)
         if (!TARGETED_DIVISIONS.includes(divisionName)) return;
         const newActivitiesArray = activitiesArray.map(activityObj => {
-          const { branch, primaryClassifierCode, secondaryClassifierCode, seeded, counter } = activityObj;
-          const eventIndex = getIndex(branch, primaryClassifierCode, secondaryClassifierCode);
-          addToUpdateObj(primaryClassifierCode, eventIndex, seeded, counter)
+          const eventIndex = getEventIndex(activityObj);
           return { eventIndex, ...activityObj }
         })
         aggregatedSources = [...aggregatedSources, ...newActivitiesArray]
       })
     })
     return aggregatedSources
+  }
+
+  function getEventIndex(activityObj) {
+    const { branch, primaryClassifierCode, secondaryClassifierCode, seeded, counter } = activityObj;
+    const eventIndex = getIndex(branch, primaryClassifierCode, secondaryClassifierCode);
+    addToUpdateObj(primaryClassifierCode, eventIndex, seeded, counter)
+    return eventIndex;
   }
 
   function filterOutSeeded(sourcesObj) {
@@ -132,6 +143,7 @@
     const { counter } = sourcesUpdateObj[primaryClassifierCode][eventIndex]
     entries.slice(counter).forEach((entry, i) => {
       console.log(entry);
+
       // API.handleRequest(entry, secondaryClassifierCode);
       addToCounters(primaryClassifierCode, eventIndex, i);
     })
