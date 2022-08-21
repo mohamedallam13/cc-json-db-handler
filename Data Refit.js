@@ -35,13 +35,18 @@
     const { primaryClassifierCode, secondaryClassifierCode } = sourceObj;
     cleanEntry.divisionId = primaryClassifierCode;
     cleanEntry.eventId = secondaryClassifierCode;
+    cleanEntry.fillCheck = getFillCheck(cleanEntry);
   }
 
   function refit(cleanKey, cleanEquivalent) {
 
   }
 
-  function normalize() {
+  function normalize(cleanKey) {
+
+  }
+
+  function getFillCheck(cleanEntry) {
 
   }
 

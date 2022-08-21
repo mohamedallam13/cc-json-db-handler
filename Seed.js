@@ -58,15 +58,16 @@
     getSourcesIndex();
   }
 
+  function dbClear() {
+    dbStart();
+    clearDB();
+  }
+
   function dbStart() {
     const { CCJSONsDBSuperIndex } = referencesObj;
     startConnection(CCJSONsDBSuperIndex.fileContent); // Start the Database
   }
 
-  function dbClear() {
-    dbStart();
-    clearDB();
-  }
 
   function getRequiredIndexes() {
     referencesObj = REFERENCES_MANAGER.init(MASTER_INDEX_FILE_ID).requireFiles(REQUIRED_REFERENCES).requiredFiles;
