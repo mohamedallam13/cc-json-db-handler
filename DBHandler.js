@@ -54,8 +54,9 @@
       INDEX[dbMain].dbFragments[dbFragment].queryArray = [];
     }
 
-    function destroyDB({ dbMain, dbFragment }) {
-      if (!dbFragment) destroyDBMain(dbMain);
+    function destroyDB({ dbMain, dbFragment } = {}) {
+      if (!dbMain) Object.keys(INDEX).forEach(dbMain => destroyDBMain(dbMain));
+      else if (!dbFragment) destroyDBMain(dbMain);
       else destroyFragment(dbFragment);
       saveIndex()
     }

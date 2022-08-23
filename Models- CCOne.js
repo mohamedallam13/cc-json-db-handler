@@ -1,21 +1,21 @@
-; (function (root, factory) {
-  root.CCER = factory()
-})(this, function () {
+// ; (function (root, factory) {
+//   root.CCER = factory()
+// })(this, function () {
 
-  const { Schema, Model } = ORM;
+//   const { Schema, Model } = ORM;
 
-  const DBMAIN = "CCONE"
+//   const DBMAIN = "CCONE"
 
-  const userSchemaMap = {
+//   const userSchemaMap = {
 
-  };
+//   };
 
 
-  const userSchema = new Schema(userSchemaMap,
-    { dbMain: DBMAIN })
+//   const userSchema = new Schema(userSchemaMap,
+//     { dbMain: DBMAIN })
 
-  const model = new Model(userSchema, {});
+//   const model = new Model(userSchema, {});
 
-  return model
+//   return model
 
-})
+// })
