@@ -26,43 +26,16 @@
   }
 
   class Schema {
-    constructor(map, options) {
+    constructor(map, options = {}) {
       this.map = map;
       this.options = options;
     }
 
-    scopeCapture() {
-      const self = this;
-      return self;
-    }
-    // getProperObj(rawObj) {
-    //   let splitProperObj = {};
-    //   Object.entries(rawObj).forEach(([key, value]) => {
-    //     applyConfigs(key, value, properObj);
-    //   });
-    //   return splitProperObj;
-    // }
-
-    // applyConfigs(key, value, splitProperObj) {
-    //   let { db = 'core', validate, defaultValue, type, enums } = this.map[key];
-    //   if (defaultValue) value = value || defaultValue;
-    //   if (required) if (value == "") throw `${key} has to have a value!`;
-    //   if (type) if (typeof value != type) throw `${key} does not have the correct type!`;
-    //   if (!validate(value)) throw `${key} does not have a valid value!`;
-    //   if (enums) if (!enums.includes(value)) throw `${key} does not have a valid choices!`;
-    //   if (!splitProperObj[db]) splitProperObj = {};
-    //   splitProperObj[db] = { ...splitProperObj[db], [key]: value };
-    // }
-
-
-    //Different approach
-
     getSplitObj(rawObj) {
       console.log(this)
-      console.log(this.scopeCapture());
       const { dbSplit } = this.options;
       console.log(connectionsObj)
-      const properObj = getProperObj(rawObj);
+      const properObj = this.getProperObj(rawObj);
       let splitObj = {};
       Object.entries(dbSplit).forEach(([db, propsArray]) => {
         propsArray.forEach(key => {
@@ -70,7 +43,7 @@
           splitObj[db][key] = properObj[key]
         })
       })
-      return getSplitObj;
+      return splitObj;
     }
 
     getProperObj(rawObj) {
@@ -82,17 +55,18 @@
           value = innerSchema.getProperObj(rawObj);
           return { ...acc, [key]: [value] }
         }
-        value = applyConfigs(key, properties, rawObj);
-        return properObj = { ...acc, [key]: value }
+        value = this.applyConfigs(key, properties, rawObj);
+        return { ...acc, [key]: value }
       }, {});
       return properObj
     }
 
     applyConfigs(key, properties, rawObj) {
-      let { validate, defaultValue, type, enums } = properties;
+      let { validate, defaultValue, type, required, enums } = properties;
       let value = rawObj[key];
       if (required) if (!value || value == "") throw `${key} has to have a value!`;
       if (defaultValue) value = value || defaultValue;
+      console.log(typeof value)
       if (type) if (typeof value != type) throw `${key} does not have the correct type!`;
       if (validate) if (!validate(value)) throw `${key} does not have a valid value!`;
       if (enums) if (!enums.includes(value)) throw `${key} does not have a valid choices!`;
@@ -166,7 +140,9 @@
       const { dbMain } = this.schema.options
       const { dbFragment } = this.options
 
-      const splitProperObj = getSplitObj(request);
+      // const splitProperObj = getSplitObj.call(this.schema, request);
+      const getSplitObj_ = getSplitObj.bind(this.schema);
+      const splitProperObj = getSplitObj_(request);
       Object.entries(splitProperObj).forEach(([db, obj]) => {
         connectionsObj[db].addToDB(obj, { dbMain, dbFragment });
       });
@@ -225,17 +201,17 @@ function dbStart() {
   console.log(connectionsObj);
 }
 
-function testORMDestroy() {
+function test_ORMDestroy() {
   const { clearDB } = ORM
   dbStart();
   clearDB();
 }
 
-function testORM() {
+function test_ORM() {
 
   const { Toolkit } = CCLIBRARIES;
   const { timestampCreate } = Toolkit;
-  const { createSchema, Model, saveDB } = ORM
+  const { createSchema, Model, Schema, saveDB } = ORM
 
   dbStart();
 
@@ -253,7 +229,8 @@ function testORM() {
     }
   }
 
-  const statusSchema = createSchema(statusSchemaMap)
+  // const statusSchema = createSchema(statusSchemaMap)
+  const statusSchema = new Schema(statusSchemaMap)
 
   const userSchemaMap = {
     name: {
@@ -275,7 +252,16 @@ function testORM() {
     }
   };
 
-  const userSchema = createSchema(userSchemaMap,
+  // const userSchema = createSchema(userSchemaMap,
+  //   {
+  //     dbMain: DBMAIN,
+  //     dbSplit: {
+  //       core: ["name", "age", "email", 'key', 'id'],
+  //       aux: ['statusArr', 'key', 'id']
+  //     }
+  //   });
+
+  const userSchema = new Schema(userSchemaMap,
     {
       dbMain: DBMAIN,
       dbSplit: {
@@ -302,21 +288,4 @@ function testORM() {
 
 function testCompile() {
   console.log("Compiled!")
-}
-
-function test2() {
-  let entry;
-  // entry = Object.assign({}, entry, { a: 1, b: 2 })
-  console.log(entry)
-}
-
-function testReduce() {
-  const entries = [["a", 1], ["b", 2]]
-  const properObj = entries.reduce((acc, [key, value]) => {
-    return {
-      ...acc,
-      [key]: value
-    }
-  }, {})
-  console.log(properObj)
 }

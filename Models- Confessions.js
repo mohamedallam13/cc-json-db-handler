@@ -1,39 +1,55 @@
-// ; (function (root, factory) {
-//   root.CONFESSION = factory()
-// })(this, function () {
+; (function (root, factory) {
+  root.CONFESSION = factory()
+})(this, function () {
 
-//   const { Schema, Model } = ORM;
+  const { Schema, Model } = ORM;
 
-//   const DBMAIN = "CCMAIN"
+  const { Toolkit } = CCLIBRARIES;
+  const { timestampCreate } = Toolkit;
 
-//   const confessionSchemaMap = {
-//     confession: {
-//       validate: () => { },
-//       defaultValue: "",
-//       type: "string"
-//     },
-//     sn: {
-//     },
-//     category: {
+  const DBMAIN = "CCMAIN"
 
-//     },
-//     status: {
-//       enums: ['posted', 'rejected', 'skipped']
-//     }
-//   };
+  const statusSchemaMap = {
+    timestamp: {
+      type: "object",
+      defaultValue: timestampCreate()
+    },
+    status: {
+      type: "string",
+      defaultValue: 'pending',
+      enums: ['pending', 'posted', 'rejected', 'skipped']
+    }
+  }
+
+  const statusSchema = new Schema(statusSchemaMap)
+
+  const confessionSchemaMap = {
+    confession: {
+      validate: () => { },
+      defaultValue: "",
+      type: "string"
+    },
+    sn: {
+      type: "number"
+    },
+    category: {
+      type: "string"
+    },
+    statusArr: [statusSchema]
+  };
 
 
-//   const confessionSchema = new Schema(confessionSchemaMap,
-//     {
-//       dbMain: DBMAIN,
-//       dbSplit: {
-//         core: [],
-//         aux: []
-//       }
-//     })
+  const confessionSchema = new Schema(confessionSchemaMap,
+    {
+      dbMain: DBMAIN,
+      dbSplit: {
+        core: ["name", "age", "email", 'key', 'id'],
+        aux: ['statusArr', 'key', 'id']
+      }
+    })
 
-//   const model = new Model(confessionSchema, {});
+  const model = new Model(confessionSchema, {});
 
-//   return model
+  return model
 
-// })
+})
