@@ -28,7 +28,7 @@
     }); // Process Every source
     augmentToSourcesIndex();
     saveSourcesIndex();
-    stopTriggers()
+    // stopTriggers()
   }
 
   function clearCache() {
