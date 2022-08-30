@@ -31,22 +31,10 @@
       this.options = options;
     }
 
-    getSplitObj(rawObj) {
-      const { dbSplit } = this.options;
-      const properObj = this.getProperObj(rawObj);
-      let splitObj = {};
-      Object.entries(dbSplit).forEach(([db, propsArray]) => {
-        propsArray.forEach(key => {
-          if (!splitObj[db]) splitObj[db] = {};
-          splitObj[db][key] = properObj[key]
-        })
-      })
-      return splitObj;
-    }
-
-    getProperObj(rawObj) {
+    getProperObj(rawObj, updateKeys) {
       const { map } = this;
       const properObj = Object.entries(map).reduce((acc, [key, properties]) => {
+        if (updateKeys) if (updateKeys.includes(key)) return
         let value;
         if (Array.isArray(properties)) {
           const innerSchema = properties[0];
@@ -71,13 +59,8 @@
       return value;
     }
 
-  }
-
-  function createSchema(map, options = {}) {
-
-    function getSplitObj(rawObj) {
-      const { dbSplit } = options;
-      const properObj = getProperObj(rawObj);
+    getSplitObj(properObj) {
+      const { dbSplit } = this.options;
       let splitObj = {};
       Object.entries(dbSplit).forEach(([db, propsArray]) => {
         propsArray.forEach(key => {
@@ -88,38 +71,55 @@
       return splitObj;
     }
 
-    function getProperObj(rawObj) {
-      const properObj = Object.entries(map).reduce((acc, [key, properties]) => {
-        let value;
-        if (Array.isArray(properties)) {
-          const innerSchema = properties[0];
-          value = innerSchema.getProperObj(rawObj);
-          return { ...acc, [key]: [value] }
-        }
-        value = applyConfigs(key, properties, rawObj);
-        return { ...acc, [key]: value }
-      }, {});
-      return properObj
-    }
-
-    function applyConfigs(key, properties, rawObj) {
-      let { validate, defaultValue, type, required, enums } = properties;
-      let value = rawObj[key];
-      if (required) if (!value || value == "") throw `${key} has to have a value!`;
-      if (defaultValue) value = value || defaultValue;
-      console.log(typeof value)
-      if (type) if (typeof value != type) throw `${key} does not have the correct type!`;
-      if (validate) if (!validate(value)) throw `${key} does not have a valid value!`;
-      if (enums) if (!enums.includes(value)) throw `${key} does not have a valid choices!`;
-      return value;
-    }
-    return {
-      map,
-      options,
-      getSplitObj,
-      getProperObj
-    }
   }
+
+  // function createSchema(map, options = {}) {
+
+  //   function getSplitObj(rawObj) {
+  //     const { dbSplit } = options;
+  //     const properObj = getProperObj(rawObj);
+  //     let splitObj = {};
+  //     Object.entries(dbSplit).forEach(([db, propsArray]) => {
+  //       propsArray.forEach(key => {
+  //         if (!splitObj[db]) splitObj[db] = {};
+  //         splitObj[db][key] = properObj[key]
+  //       })
+  //     })
+  //     return splitObj;
+  //   }
+
+  //   function getProperObj(rawObj) {
+  //     const properObj = Object.entries(map).reduce((acc, [key, properties]) => {
+  //       let value;
+  //       if (Array.isArray(properties)) {
+  //         const innerSchema = properties[0];
+  //         value = innerSchema.getProperObj(rawObj);
+  //         return { ...acc, [key]: [value] }
+  //       }
+  //       value = applyConfigs(key, properties, rawObj);
+  //       return { ...acc, [key]: value }
+  //     }, {});
+  //     return properObj
+  //   }
+
+  //   function applyConfigs(key, properties, rawObj) {
+  //     let { validate, defaultValue, type, required, enums } = properties;
+  //     let value = rawObj[key];
+  //     if (required) if (!value || value == "") throw `${key} has to have a value!`;
+  //     if (defaultValue) value = value || defaultValue;
+  //     console.log(typeof value)
+  //     if (type) if (typeof value != type) throw `${key} does not have the correct type!`;
+  //     if (validate) if (!validate(value)) throw `${key} does not have a valid value!`;
+  //     if (enums) if (!enums.includes(value)) throw `${key} does not have a valid choices!`;
+  //     return value;
+  //   }
+  //   return {
+  //     map,
+  //     options,
+  //     getSplitObj,
+  //     getProperObj
+  //   }
+  // }
 
 
   class Model {
@@ -134,37 +134,72 @@
     }
 
     create(request) {
-      const { getSplitObj } = this.schema;
-      const { dbMain } = this.schema.options
-      const { dbFragment } = this.options
-
+      const { getSplitObj, getProperObj } = this.schema;
+      const { dbMain } = this.schema.options;
+      const { dbFragment } = this.options;
+      const getProperObj_ = getProperObj.bind(this.schema);
       const getSplitObj_ = getSplitObj.bind(this.schema);
-      const splitProperObj = getSplitObj_(request);
+
+      const properObj = getProperObj_(request);
+      const splitProperObj = getSplitObj_(properObj);
       divideEntryToDB(splitProperObj, { dbMain, dbFragment });
       return this
     }
 
-    updatePush(id, { }) {
+    update(id, request, updateParam) {
+      const { getSplitObj, getProperObj } = this.schema;
+      const { dbMain } = this.schema.options;
+      const { dbFragment } = this.options;
+      const getProperObj_ = getProperObj.bind(this.schema);
+      const getSplitObj_ = getSplitObj.bind(this.schema);
+      const entry = this.findById(id, { dbMain, dbFragment });
+      if (entry == null) return null;
 
+      const updateObj = getProperObj_(request, updateParam);
+      Object.entries(updateObj).forEach(([key, value]) => {
+        if (Array.isArray(value)) entry[key] = [...updateObj[key], ...entry[key]];
+        else entry[key] = updateObj[key]
+      })
+      const splitProperObj = getSplitObj_(entry);
+      divideEntryToDB(splitProperObj, { dbMain, dbFragment });
+      return this
     }
 
-    updatePull() {
+    pull(id, [paramKey, paramValue], arrayParam) {
+      const { getSplitObj } = this.schema;
+      const { dbMain } = this.schema.options;
+      const { dbFragment } = this.options;
+      const getSplitObj_ = getSplitObj.bind(this.schema);
+      const entry = this.findById(id, { dbMain, dbFragment });
+      if (entry == null) return null;
+      if (!entry[arrayParam]) return null;
 
+      const index = entry[arrayParam].findIndex(obj => obj[paramKey] == paramValue);
+      if (index != -1) entry[arrayParam].splice(index, 1);
+      const splitProperObj = getSplitObj_(entry);
+      divideEntryToDB(splitProperObj, { dbMain, dbFragment });
+      return this
     }
 
     delete(id, db) {
-
+      const { dbMain } = this.schema.options
+      const { dbFragment } = this.options
+      let entry = assembleFromDB(id, { dbMain, dbFragment });
+      return this
     }
 
     findByKey(key) {
       const { dbMain } = this.schema.options
       const { dbFragment } = this.options
-      let entry = assembleFromDB(key, { dbMain, dbFragment });
+      let entry = assembleFromDBByKey(key, { dbMain, dbFragment });
       return entry
     }
 
     findById(id) {
-
+      const { dbMain } = this.schema.options
+      const { dbFragment } = this.options
+      let entry = assembleFromDBById(id, { dbMain, dbFragment });
+      return entry
     }
     /////Utilities
     divideEntryToDB(splitProperObj, { dbMain, dbFragment }) {
@@ -173,9 +208,18 @@
       });
     }
 
-    assembleFromDB(key, { dbMain, dbFragment }) {
+    assembleFromDBByKey(key, { dbMain, dbFragment }) {
       const assembledEntry = Object.entries(connectionsObj).reduce((acc, [, connectionObj]) => {
         const entry = connectionObj.lookUpByKey(key, { dbMain, dbFragment }) || {};
+        return { ...acc, ...entry }
+      }, {});
+      if (Object.keys(assembledEntry).length == 0) return null
+    }
+
+
+    assembleFromDBById(id, { dbMain, dbFragment }) {
+      const assembledEntry = Object.entries(connectionsObj).reduce((acc, [, connectionObj]) => {
+        const entry = connectionObj.lookUpById(id, { dbMain, dbFragment }) || {};
         return { ...acc, ...entry }
       }, {});
       if (Object.keys(assembledEntry).length == 0) return null
