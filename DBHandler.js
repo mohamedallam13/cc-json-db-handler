@@ -112,11 +112,15 @@
       return this
     }
 
-    function lookUp(key, { dbMain, dbFragment }) {
+    function lookUpByKey(key, { dbMain, dbFragment }) {
       dbFragment = getProperFragment(dbMain, dbFragment);
       if (!dbFragment) return
       if (dbMain) return lookUpByQueryArray(key, dbMain);
       return lookUpInFragment(key, dbFragment);
+    }
+
+    function lookUpById(id, { dbMain, dbFragment }) {
+
     }
 
     function lookUpByQueryArray(key, dbMain) {
@@ -237,6 +241,14 @@
       if (index != -1) array.splice(element, 1);
     }
 
+    function getExternalConfig() {
+
+    }
+
+    function addExternalConfig() {
+
+    }
+
     function OpenDBEntry(dbMain, fragmentFileObj) {
       this.properties = new OpenDBProperties(dbMain);
       this.toWrite = fragmentFileObj || new DBFileObj();
@@ -255,6 +267,8 @@
 
     function IndexEntry() {
       this.queryArray = [];
+      this.externalConfigs = {};
+      this.ignoreIndex = false;
       this.fileId = "";
     }
 
@@ -262,11 +276,14 @@
       INDEX,
       OPEN_DB,
       addToDB,
-      lookUp,
+      lookUpByKey,
+      lookUpById,
       saveToDBFiles,
       closeDB,
       clearDB,
-      destroyDB
+      destroyDB,
+      getExternalConfig,
+      addExternalConfig
     };
   }
 

@@ -61,6 +61,29 @@
 
   }
 
+  function addConfession(request) {
+    let confession = CCMAIN.find(request) //Preset that it looks up by id, preset that it looks up 
+    if (!confession) {
+      confession = CCMAIN.create(request)
+    } else {
+      CCMAIN.update()
+      CCMAIN.updateIndex()
+
+    }
+    const allEmails = confessions.emails;
+    allEmails.forEach(email => {
+      let ccer = CCER.find({ email })
+      if (!currentUser) {
+        ccer = CCER.create(request)
+      } else {
+        CCER.update(ccer.id, confession.sn)
+
+      }
+    })
+
+
+  }
+
   return {
     handleCompiledRequest
   }

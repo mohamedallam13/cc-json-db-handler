@@ -7,10 +7,13 @@
   }
 
   const Router = {
-    addUser: function (request) {
+    addUser(request) {
 
     },
-    updateUser: function (request) {
+    updateUser(request) {
+
+    },
+    handleCompoundedRequest(request){
 
     }
   }

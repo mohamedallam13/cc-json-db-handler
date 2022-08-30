@@ -7,20 +7,20 @@
   const { init } = JSON_DB_HANDLER;
 
   function startConnection(indexFileIdsObj) {
-    Object.entries(indexFileIdsObj).forEach(([connectionLabel, indexFileId]) => {
+    Object.entries(indexFileIdsObj).forEach(([connectionLabel, { indexFileId }]) => {
       connectionsObj[connectionLabel] = init(indexFileId);
     })
     return connectionsObj
   }
 
   function saveDB() {
-    Object.entries(connectionsObj).forEach(([connectionLabel, connectionObj]) => {
+    Object.entries(connectionsObj).forEach(([, connectionObj]) => {
       connectionObj.saveToDBFiles();
     });
   }
 
   function clearDB() {
-    Object.entries(connectionsObj).forEach(([connectionLabel, connectionObj]) => {
+    Object.entries(connectionsObj).forEach(([, connectionObj]) => {
       connectionObj.destroyDB();
     })
   }
@@ -32,9 +32,7 @@
     }
 
     getSplitObj(rawObj) {
-      console.log(this)
       const { dbSplit } = this.options;
-      console.log(connectionsObj)
       const properObj = this.getProperObj(rawObj);
       let splitObj = {};
       Object.entries(dbSplit).forEach(([db, propsArray]) => {
@@ -135,21 +133,22 @@
       return this
     }
 
-    add(request) {
+    create(request) {
       const { getSplitObj } = this.schema;
       const { dbMain } = this.schema.options
       const { dbFragment } = this.options
 
-      // const splitProperObj = getSplitObj.call(this.schema, request);
       const getSplitObj_ = getSplitObj.bind(this.schema);
       const splitProperObj = getSplitObj_(request);
-      Object.entries(splitProperObj).forEach(([db, obj]) => {
-        connectionsObj[db].addToDB(obj, { dbMain, dbFragment });
-      });
+      divideEntryToDB(splitProperObj, { dbMain, dbFragment });
       return this
     }
 
-    updateArray() {
+    updatePush(id, { }) {
+
+    }
+
+    updatePull() {
 
     }
 
@@ -160,15 +159,29 @@
     findByKey(key) {
       const { dbMain } = this.schema.options
       const { dbFragment } = this.options
-
-      let entry;
-      Object.entries(connectionsObj).forEach(([connectionLabel, connectionObj]) => {
-        const partialEntry = connectionObj.lookUp(key, { dbMain, dbFragment });
-        if (partialEntry) entry = Object.assign({}, entry, partialEntry);
-      })
-      if (!entry) return entry;
-      return entry;
+      let entry = assembleFromDB(key, { dbMain, dbFragment });
+      return entry
     }
+
+    findById(id) {
+
+    }
+    /////Utilities
+    divideEntryToDB(splitProperObj, { dbMain, dbFragment }) {
+      Object.entries(splitProperObj).forEach(([db, obj]) => {
+        connectionsObj[db].addToDB(obj, { dbMain, dbFragment });
+      });
+    }
+
+    assembleFromDB(key, { dbMain, dbFragment }) {
+      const assembledEntry = Object.entries(connectionsObj).reduce((acc, [, connectionObj]) => {
+        const entry = connectionObj.lookUpByKey(key, { dbMain, dbFragment }) || {};
+        return { ...acc, ...entry }
+      }, {});
+      if (Object.keys(assembledEntry).length == 0) return null
+    }
+
+
   }
 
   // return {

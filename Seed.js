@@ -148,6 +148,7 @@
     entries.slice(counter).forEach((entry, i) => {
       console.log(entry);
       const cleanEntry = DATA_REFIT.cleanEntries(sourceObj, entry);
+      GSCRIPT_ROUTER.route(primaryClassifierCode, cleanEntry);
       // API.handleRequest(cleanEntry, secondaryClassifierCode);
       addToCounters(primaryClassifierCode, eventIndex, i);
     })
