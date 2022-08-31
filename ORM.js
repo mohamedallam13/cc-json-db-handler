@@ -44,12 +44,25 @@
         value = this.applyConfigs(key, properties, rawObj);
         return { ...acc, [key]: value }
       }, {});
+
+      const populate = function (paramKey) {
+        const { ref } = map[paramKey];
+        if (!ref) throw `No ref found in ${paramKey}`
+        const idsArr = this[paramKey];
+        this[paramKey] = idsArr.map(id => {
+
+        })
+      }
+
+      Object.setPrototypeOf(properObj, { populate })
+
       return properObj
     }
 
     applyConfigs(key, properties, rawObj) {
-      let { validate, defaultValue, type, required, enums } = properties;
+      let { validate, defaultValue, type, required, enums, setValue } = properties;
       let value = rawObj[key];
+      if (setValue) value = setValue(rawObj);
       if (required) if (!value || value == "") throw `${key} has to have a value!`;
       if (defaultValue) value = value || defaultValue;
       console.log(typeof value)
@@ -180,27 +193,33 @@
       divideEntryToDB(splitProperObj, { dbMain, dbFragment });
       return this
     }
-
-    delete(id, db) {
+    
+    deleteByKey(key) {
       const { dbMain } = this.schema.options
       const { dbFragment } = this.options
-      let entry = assembleFromDB(id, { dbMain, dbFragment });
-      return this
+      Object.entries(connectionsObj).forEach(([, connectionObj]) => connectionObj.deleteFromDBByKey(key, { dbMain, dbFragment }));
+    }
+
+    deleteById(id) {
+      const { dbMain } = this.schema.options
+      const { dbFragment } = this.options
+      Object.entries(connectionsObj).forEach(([, connectionObj]) => connectionObj.deleteFromDBById(id, { dbMain, dbFragment }));
     }
 
     findByKey(key) {
       const { dbMain } = this.schema.options
       const { dbFragment } = this.options
-      let entry = assembleFromDBByKey(key, { dbMain, dbFragment });
+      let entry = this.assembleFromDBByKey(key, { dbMain, dbFragment });
       return entry
     }
 
     findById(id) {
       const { dbMain } = this.schema.options
       const { dbFragment } = this.options
-      let entry = assembleFromDBById(id, { dbMain, dbFragment });
+      let entry = this.assembleFromDBById(id, { dbMain, dbFragment });
       return entry
     }
+
     /////Utilities
     divideEntryToDB(splitProperObj, { dbMain, dbFragment }) {
       Object.entries(splitProperObj).forEach(([db, obj]) => {
@@ -225,23 +244,14 @@
       if (Object.keys(assembledEntry).length == 0) return null
     }
 
-
   }
 
-  // return {
-  //   connectionsObj,
-  //   startConnection,
-  //   clearDB,
-  //   Schema,
-  //   Model
-  // }
   return {
     connectionsObj,
     startConnection,
     clearDB,
     saveDB,
     Schema,
-    createSchema,
     Model
   }
 

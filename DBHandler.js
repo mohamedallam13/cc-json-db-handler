@@ -120,8 +120,27 @@
     }
 
     function lookUpById(id, { dbMain, dbFragment }) {
+      dbFragment = getProperFragment(dbMain, dbFragment);
 
     }
+
+    function deleteFromDBByKey(key, { dbMain, dbFragment }) {
+      dbFragment = getProperFragment(dbMain, dbFragment);
+      const id = OPEN_DB[dbFragment].toWrite.index[key];
+      deleteFromDBById(id, { dbMain, dbFragment });
+    }
+
+
+    function deleteFromDBById(_id, { dbMain, dbFragment }) {
+      dbFragment = getProperFragment(dbMain, dbFragment);
+      const iterativeIndex = { ...OPEN_DB[dbFragment].toWrite.index }
+      Object.entries(iterativeIndex).forEach(([key, id]) => {
+        if (_id == id) delete OPEN_DB[dbFragment].toWrite.index[key];
+      })
+      delete OPEN_DB[dbFragment].toWrite.data[_id];
+      OPEN_DB[dbFragment].properties.isChanged = true;
+    }
+
 
     function lookUpByQueryArray(key, dbMain) {
       const { dbFragments } = INDEX[dbMain];
@@ -236,11 +255,6 @@
       return null
     }
 
-    function pull(array, element) {
-      const index = array.indexOf(element);
-      if (index != -1) array.splice(element, 1);
-    }
-
     function getExternalConfig() {
 
     }
@@ -278,6 +292,8 @@
       addToDB,
       lookUpByKey,
       lookUpById,
+      deleteFromDBByKey,
+      deleteFromDBById,
       saveToDBFiles,
       closeDB,
       clearDB,
