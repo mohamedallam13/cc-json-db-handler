@@ -44,18 +44,6 @@
         value = this.applyConfigs(key, properties, rawObj);
         return { ...acc, [key]: value }
       }, {});
-
-      const populate = function (paramKey) {
-        const { ref } = map[paramKey];
-        if (!ref) throw `No ref found in ${paramKey}`
-        const idsArr = this[paramKey];
-        this[paramKey] = idsArr.map(id => {
-
-        })
-      }
-
-      Object.setPrototypeOf(properObj, { populate })
-
       return properObj
     }
 
@@ -146,6 +134,20 @@
       return this
     }
 
+    augmentMethodsToEntryObj(entry) {
+      const { map } = this.schema
+
+      const populate = function (paramKey) {
+        const { ref } = map[paramKey];
+        if (!ref) throw `No ref found in ${paramKey}`
+        const idsArr = this[paramKey];
+        this[paramKey] = idsArr.map(id => {
+
+        })
+      }
+      Object.setPrototypeOf(entry, { populate });
+    }
+
     create(request) {
       const { getSplitObj, getProperObj } = this.schema;
       const { dbMain } = this.schema.options;
@@ -154,6 +156,7 @@
       const getSplitObj_ = getSplitObj.bind(this.schema);
 
       const properObj = getProperObj_(request);
+      augmentMethodsToEntryObj(properObj)
       const splitProperObj = getSplitObj_(properObj);
       divideEntryToDB(splitProperObj, { dbMain, dbFragment });
       return this
@@ -166,6 +169,7 @@
       const getProperObj_ = getProperObj.bind(this.schema);
       const getSplitObj_ = getSplitObj.bind(this.schema);
       const entry = this.findById(id, { dbMain, dbFragment });
+      augmentMethodsToEntryObj(entry)
       if (entry == null) return null;
 
       const updateObj = getProperObj_(request, updateParam);
@@ -193,7 +197,7 @@
       divideEntryToDB(splitProperObj, { dbMain, dbFragment });
       return this
     }
-    
+
     deleteByKey(key) {
       const { dbMain } = this.schema.options
       const { dbFragment } = this.options
@@ -210,6 +214,7 @@
       const { dbMain } = this.schema.options
       const { dbFragment } = this.options
       let entry = this.assembleFromDBByKey(key, { dbMain, dbFragment });
+      augmentMethodsToEntryObj(entry)
       return entry
     }
 
@@ -217,7 +222,16 @@
       const { dbMain } = this.schema.options
       const { dbFragment } = this.options
       let entry = this.assembleFromDBById(id, { dbMain, dbFragment });
+      augmentMethodsToEntryObj(entry)
       return entry
+    }
+
+
+
+    find(conditionsObj) {
+      const { dbMain } = this.schema.options
+      const { dbFragment } = this.options
+
     }
 
     /////Utilities
