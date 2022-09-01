@@ -39,6 +39,7 @@
         if (Array.isArray(properties)) {
           const innerSchema = properties[0];
           value = innerSchema.getProperObj(rawObj);
+          if (checkArrayValueIsEmpty(value)) return { ...acc, [key]: [] }
           return { ...acc, [key]: [value] }
         }
         value = this.applyConfigs(key, properties, rawObj);
@@ -51,7 +52,7 @@
       return properObj
     }
 
-    applyConfigs(key, properties, rawObj) {
+    applyConfigs(key, properties, rawObj) {  //Private
       let { validate, defaultValue, type, required, enums, setValue } = properties;
       let value = rawObj[key];
       if (setValue) value = setValue(rawObj);
@@ -59,7 +60,9 @@
       if (defaultValue) value = value || defaultValue;
       if (type) {
         if (type == "IdObject") {
-          if (!value instanceof IdObj) {
+          if (!value || value == "") {
+            value = ""; // Set value to blank in case there is no value provided for an id object
+          } else if (!value instanceof IdObj) {
             throw `${key} does not have the correct type of IdObj!`;
           }
         } else if (typeof value != type) {
@@ -73,7 +76,7 @@
     }
 
 
-    addId(properObj, rawObj) {
+    addId(properObj, rawObj) { //Private
       const IdObj = function (id, dbMain, dbFragment) {
         this.id = id
         this.dbMain = dbMain;
@@ -86,9 +89,21 @@
       properObj.id = new IdObj(_id, dbMain, dbFragment)
     }
 
-    addKey(properObj, rawObj) {
+    addKey(properObj, rawObj) {  //Private
       const { key } = this.options;
       properObj.key = rawObj[key];
+    }
+
+    checkArrayValueIsEmpty(value) {  //Private
+      if (typeof value == "object") {
+        let bool = false;
+        Object.entries(value).forEach(([key, val]) => {
+          if (key == "timestamp") return
+          bool = val == "" && bool
+        })
+        return bool
+      }
+      return value == "";
     }
 
     getSplitObj(properObj) {

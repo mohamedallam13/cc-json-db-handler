@@ -74,6 +74,7 @@
   const emailsSchema = new Schema(emailsSchemaMap)
 
   const mergedAccountsSchemaMap = {
+    blankOnCreation: true,
     timestamp: {
       type: "object",
       defaultValue: timestampCreate()
@@ -86,21 +87,33 @@
   const mergedAccountsSchema = new Schema(mergedAccountsSchemaMap)
 
   const userInfoSchemaMap = {
-    name: {
+    firstName: {
+      defaultValue: "",
+      type: "string"
+    },
+    lastName: {
       defaultValue: "",
       type: "string"
     },
     age: {
       type: "number"
-    },
-    email: {
-      type: "string"
-    },
+    }
   }
   const userInfoSchema = new Schema(userInfoSchemaMap)
 
+  const userContactInfoSchemaMap = {
+    email: {
+      type: "string"
+    },
+    mobile: {
+      type: "string"
+    },
+  }
+  const userContactInfoSchema = new Schema(userContactInfoSchemaMap)
+
   const userSchemaMap = {
     userInfoArr: [userInfoSchema],
+    userContactInfo: [userContactInfoSchema],
     statusArr: [statusSchema],
     rolesArr: [roleSchema],
     potentialConfessArr: [confessSNSchema],
