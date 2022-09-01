@@ -61,7 +61,6 @@
 
   const confessionSchema = new Schema(confessionSchemaMap,
     {
-      dbMain: DBMAIN,
       dbSplit: {
         core: ["name", "age", 'key', 'id'],
         aux: ['statusArr', 'key', 'id'],
@@ -72,7 +71,9 @@
       base: "id"
     })
 
-  const model = new Model(confessionSchema, {});
+  const model = new Model(confessionSchema, {
+    dbMain: DBMAIN
+  });
 
   return model
 

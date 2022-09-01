@@ -32,7 +32,7 @@
     }
 
     getProperObj(rawObj, updateKeys) {
-      const { map } = this;
+      const { map, options } = this;
       const properObj = Object.entries(map).reduce((acc, [key, properties]) => {
         if (updateKeys) if (updateKeys.includes(key)) return
         let value;
@@ -44,6 +44,10 @@
         value = this.applyConfigs(key, properties, rawObj);
         return { ...acc, [key]: value }
       }, {});
+      if (!Object.keys(options).length == 0) {
+        this.addId(properObj, rawObj)
+        this.addKey(properObj, rawObj)
+      }
       return properObj
     }
 
@@ -53,11 +57,38 @@
       if (setValue) value = setValue(rawObj);
       if (required) if (!value || value == "") throw `${key} has to have a value!`;
       if (defaultValue) value = value || defaultValue;
-      console.log(typeof value)
-      if (type) if (typeof value != type) throw `${key} does not have the correct type!`;
+      if (type) {
+        if (type == "IdObject") {
+          if (!value instanceof IdObj) {
+            throw `${key} does not have the correct type of IdObj!`;
+          }
+        } else if (typeof value != type) {
+          throw `${key} does not have the correct type!`;
+        }
+      }
+
       if (validate) if (!validate(value)) throw `${key} does not have a valid value!`;
       if (enums) if (!enums.includes(value)) throw `${key} does not have a valid choices!`;
       return value;
+    }
+
+
+    addId(properObj, rawObj) {
+      const IdObj = function (id, dbMain, dbFragment) {
+        this.id = id
+        this.dbMain = dbMain;
+        this.dbFragment = dbFragment;
+      }
+      const { id } = this.options;
+      const { dbMain, dbFragment } = rawObj;
+      const _id = properObj[id];
+      if (!_id) return
+      properObj.id = new IdObj(_id, dbMain, dbFragment)
+    }
+
+    addKey(properObj, rawObj) {
+      const { key } = this.options;
+      properObj.key = rawObj[key];
     }
 
     getSplitObj(properObj) {
@@ -130,7 +161,7 @@
     }
 
     createFragmentModel(dbFragment) {
-      this[dbFragment] = new Model(schema, { dbFragment })
+      this[dbFragment] = new Model(schema, { ...this.options, dbFragment })
       return this
     }
 
@@ -138,11 +169,12 @@
       const { map } = this.schema
 
       const populate = function (paramKey) {
-        const { ref } = map[paramKey];
-        if (!ref) throw `No ref found in ${paramKey}`
         const idsArr = this[paramKey];
-        this[paramKey] = idsArr.map(id => {
-
+        this[paramKey] = idsArr.map(idObj => {
+          const { id, dbMain, dbFragment } = idObj;
+          const innerEntry = assembleFromDBById(id, { dbMain, dbFragment });
+          Object.setPrototypeOf(innerEntry, { populate });
+          return innerEntry
         })
       }
       Object.setPrototypeOf(entry, { populate });
@@ -150,8 +182,7 @@
 
     create(request) {
       const { getSplitObj, getProperObj } = this.schema;
-      const { dbMain } = this.schema.options;
-      const { dbFragment } = this.options;
+      const { dbMain, dbFragment } = this.options;
       const getProperObj_ = getProperObj.bind(this.schema);
       const getSplitObj_ = getSplitObj.bind(this.schema);
 
@@ -159,13 +190,12 @@
       augmentMethodsToEntryObj(properObj)
       const splitProperObj = getSplitObj_(properObj);
       divideEntryToDB(splitProperObj, { dbMain, dbFragment });
-      return this
+      return properObj
     }
 
     update(id, request, updateParam) {
       const { getSplitObj, getProperObj } = this.schema;
-      const { dbMain } = this.schema.options;
-      const { dbFragment } = this.options;
+      const { dbMain, dbFragment } = this.options;
       const getProperObj_ = getProperObj.bind(this.schema);
       const getSplitObj_ = getSplitObj.bind(this.schema);
       const entry = this.findById(id, { dbMain, dbFragment });
@@ -179,13 +209,12 @@
       })
       const splitProperObj = getSplitObj_(entry);
       divideEntryToDB(splitProperObj, { dbMain, dbFragment });
-      return this
+      return entry
     }
 
     pull(id, [paramKey, paramValue], arrayParam) {
       const { getSplitObj } = this.schema;
-      const { dbMain } = this.schema.options;
-      const { dbFragment } = this.options;
+      const { dbMain, dbFragment } = this.options;
       const getSplitObj_ = getSplitObj.bind(this.schema);
       const entry = this.findById(id, { dbMain, dbFragment });
       if (entry == null) return null;
@@ -199,28 +228,24 @@
     }
 
     deleteByKey(key) {
-      const { dbMain } = this.schema.options
-      const { dbFragment } = this.options
+      const { dbMain, dbFragment } = this.options;
       Object.entries(connectionsObj).forEach(([, connectionObj]) => connectionObj.deleteFromDBByKey(key, { dbMain, dbFragment }));
     }
 
     deleteById(id) {
-      const { dbMain } = this.schema.options
-      const { dbFragment } = this.options
+      const { dbMain, dbFragment } = this.options;
       Object.entries(connectionsObj).forEach(([, connectionObj]) => connectionObj.deleteFromDBById(id, { dbMain, dbFragment }));
     }
 
     findByKey(key) {
-      const { dbMain } = this.schema.options
-      const { dbFragment } = this.options
+      const { dbMain, dbFragment } = this.options;
       let entry = this.assembleFromDBByKey(key, { dbMain, dbFragment });
       augmentMethodsToEntryObj(entry)
       return entry
     }
 
     findById(id) {
-      const { dbMain } = this.schema.options
-      const { dbFragment } = this.options
+      const { dbMain, dbFragment } = this.options;
       let entry = this.assembleFromDBById(id, { dbMain, dbFragment });
       augmentMethodsToEntryObj(entry)
       return entry
@@ -229,8 +254,7 @@
 
 
     find(conditionsObj) {
-      const { dbMain } = this.schema.options
-      const { dbFragment } = this.options
+      const { dbMain, dbFragment } = this.options;
 
     }
 
@@ -247,6 +271,7 @@
         return { ...acc, ...entry }
       }, {});
       if (Object.keys(assembledEntry).length == 0) return null
+      return assembledEntry
     }
 
 
@@ -256,6 +281,7 @@
         return { ...acc, ...entry }
       }, {});
       if (Object.keys(assembledEntry).length == 0) return null
+      return assembledEntry
     }
 
   }

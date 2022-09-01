@@ -43,23 +43,23 @@
       defaultValue: timestampCreate()
     },
     sn: {
-      type: number
+      type: "IdObject"
     }
   }
 
   const confessSNSchema = new Schema(confessSNSchemaSchemaMap)
 
-  const activityHistorySchemaMap = {
+  const activitiesSchemaMap = {
     timestamp: {
       type: "object",
       defaultValue: timestampCreate()
     },
     applicationId: {
-      type: "string"
+      type: "IdObject"
     }
   }
 
-  const activityHistorySchema = new Schema(activityHistorySchemaMap)
+  const activitiesSchema = new Schema(activitiesSchemaMap)
 
   const emailsSchemaMap = {
     timestamp: {
@@ -79,7 +79,7 @@
       defaultValue: timestampCreate()
     },
     userId: {
-      type: "string"
+      type: "IdObject"
     }
   }
 
@@ -104,21 +104,17 @@
     statusArr: [statusSchema],
     rolesArr: [roleSchema],
     potentialConfessArr: [confessSNSchema],
-    activityHistoryArr: [activityHistorySchema],
+    activities: [activitiesSchema],
     emailsArr: [emailsSchema],
     mergedAccountsArr: [mergedAccountsSchema],
-    key: {
-      type: "string"
-    },
     id: {
-      value: function () { },
+      setValue: function () { },
       type: "number"
     }
   };
 
   const userSchema = new Schema(userSchemaMap,
     {
-      dbMain: DBMAIN,
       dbSplit: {
         core: ["name", "age", "email", 'key', 'id'],
         aux: ['statusArr', 'key', 'id']
@@ -128,7 +124,9 @@
       base: "key"
     });
 
-  const model = new Model(userSchema, {});
+  const model = new Model(userSchema, {
+    dbMain: DBMAIN,
+  });
 
   return model
 

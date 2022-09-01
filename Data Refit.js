@@ -74,6 +74,8 @@
   function augmentInfo(sourceObj, request) {
     request.divisionId = sourceObj.primaryClassifierCode;
     request.eventId = sourceObj.secondaryClassifierCode;
+    request.dbMain = sourceObj.primaryClassifierCode;
+    request.dbFragment = sourceObj.secondaryClassifierCode;
   }
 
   function refitUserData(entry) {
