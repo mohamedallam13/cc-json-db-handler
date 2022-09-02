@@ -148,7 +148,7 @@
       let entries = Object.values(data);
       if (!criteria || Object.keys(criteria).length == 0) return entries;
       Object.entries(criteria).forEach(([parameter, criterion]) => {
-        if (typeof criterion === 'function') entries.filter(criterion);
+        if (typeof criterion === 'function') entries.filter(entry=> criterion(entry[parameter]));
         else entries = entries.filter(entry => entry[parameter] == criterion);
       })
       return entries;
