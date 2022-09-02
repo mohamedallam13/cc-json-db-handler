@@ -316,12 +316,13 @@
       return null
     }
 
-    function getExternalConfig() {
-
+    function getExternalConfig(key, { dbMain, dbFragment }) {
+      return INDEX[dbMain].dbFragments[dbFragment].externalConfigs[key]
     }
 
-    function addExternalConfig() {
-
+    function addExternalConfig(key, value, { dbMain, dbFragment }) {
+      INDEX[dbMain].dbFragments[dbFragment].externalConfigs[key] = value;
+      //saveIndex();
     }
 
     function OpenDBEntry(dbMain, fragmentFileObj) {
