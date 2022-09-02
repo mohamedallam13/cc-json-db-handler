@@ -116,17 +116,17 @@
       return this
     }
 
-    function lookupByCriteria(criteria = {}, { dbMain, dbFragment }) {
+    function lookupByCriteria(criteria = [], { dbMain, dbFragment }) {
       dbFragment = getProperFragment(dbMain, dbFragment);
       if (!dbFragment) return
-      if (dbMain) return lookUpDBMainByCriteria(key, dbMain);
-      return lookUpFragmentByCriteria(key, dbFragment);
+      if (dbMain) return lookUpDBMainByCriteria(criteria, dbMain);
+      return lookUpFragmentByCriteria(criteria, dbFragment);
     }
 
     function lookUpDBMainByCriteria(criteria, dbMain) {
       const { dbFragments } = INDEX[dbMain];
       let entries = [];
-      const { id } = criteria;
+      const { id } = criteria.filter(criterionObj => criterionObj.param = "id")[0];
       Object.keys(dbFragments).forEach(dbFragment => {
         openDBFragment(dbMain, dbFragment);
         const { idQueryArray } = dbFragments[dbFragment];
@@ -146,12 +146,31 @@
       const { toWrite } = OPEN_DB[dbFragment];
       const { data } = toWrite;
       let entries = Object.values(data);
-      if (!criteria || Object.keys(criteria).length == 0) return entries;
-      Object.entries(criteria).forEach(([parameter, criterion]) => {
-        if (typeof criterion === 'function') entries.filter(entry=> criterion(entry[parameter]));
-        else entries = entries.filter(entry => entry[parameter] == criterion);
+      if (!criteria || criteria.length == 0) return entries;
+      criteria.forEach(criterionObj => {
+        const { param, path, criterion } = criterionObj
+        if (typeof criterion === 'function') {
+          entries.filter(entry => {
+            const value = getValueFromPath(path, param, entry);
+            return criterion(value)
+          });
+        } else {
+          entries = entries.filter(entry => {
+            const value = getValueFromPath(path, param, entry);
+            return value == criterion;
+          })
+        };
       })
       return entries;
+    }
+
+    function getValueFromPath(path, param, entry) {
+      let value;
+      if (!path || path.length == 0) return entry[param]
+
+      path.forEach(pathParam => value = entry[pathParam])
+      value = value[param]
+      return value
     }
 
     function lookUpByKey(key, { dbMain, dbFragment }) {
