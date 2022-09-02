@@ -51,7 +51,7 @@
     function clearFragment(dbMain, dbFragment) {
       const { fileId } = INDEX[dbMain].dbFragments[dbFragment];
       Toolkit.writeToJSON(fileId, {});
-      INDEX[dbMain].dbFragments[dbFragment].queryArray = [];
+      INDEX[dbMain].dbFragments[dbFragment].keyQueryArray = [];
     }
 
     function destroyDB({ dbMain, dbFragment } = {}) {
@@ -105,23 +105,67 @@
       dbFragment = checkOpenDBSize(dbMain, dbFragment);
       if (!dbFragment) return
       const { key, id } = entry;
-      OPEN_DB[dbFragment].toWrite.index[key] = id;
+      const { ignoreIndex } = INDEX[dbMain].dbFragments[dbFragment];
+      if (!ignoreIndex) {
+        OPEN_DB[dbFragment].toWrite.index[key] = id;
+        INDEX[dbMain].dbFragments[dbFragment].keyQueryArray.push(key);
+      }
       OPEN_DB[dbFragment].toWrite.data[id] = entry;
+      INDEX[dbMain].dbFragments[dbFragment].idQueryArray.push(id);
       OPEN_DB[dbFragment].properties.isChanged = true;
-      INDEX[dbMain].dbFragments[dbFragment].queryArray.push(key);
       return this
+    }
+
+    function lookupByCriteria(criteria = {}, { dbMain, dbFragment }) {
+      dbFragment = getProperFragment(dbMain, dbFragment);
+      if (!dbFragment) return
+      if (dbMain) return lookUpDBMainByCriteria(key, dbMain);
+      return lookUpFragmentByCriteria(key, dbFragment);
+    }
+
+    function lookUpDBMainByCriteria(criteria, dbMain) {
+      const { dbFragments } = INDEX[dbMain];
+      let entries = [];
+      const { id } = criteria;
+      Object.keys(dbFragments).forEach(dbFragment => {
+        openDBFragment(dbMain, dbFragment);
+        const { idQueryArray } = dbFragments[dbFragment];
+        if (id) {
+          if (!idQueryArray.includes(id)) return;
+          entry = lookUpInFragmentById(id, dbFragment)
+          entries.push(entry)
+        } else {
+          entries = [...entries, ...lookUpFragmentByCriteria(criteria, dbFragment)]
+        }
+        closeFragment(dbFragment);
+      })
+      return entries
+    }
+
+    function lookUpFragmentByCriteria(criteria, dbFragment) {
+      const { toWrite } = OPEN_DB[dbFragment];
+      const { data } = toWrite;
+      let entries = Object.values(data);
+      if (!criteria || Object.keys(criteria).length == 0) return entries;
+      Object.entries(criteria).forEach(([parameter, criterion]) => {
+        if (typeof criterion === 'function') entries.filter(criterion);
+        else entries = entries.filter(entry => entry[parameter] == criterion);
+      })
+      return entries;
     }
 
     function lookUpByKey(key, { dbMain, dbFragment }) {
       dbFragment = getProperFragment(dbMain, dbFragment);
       if (!dbFragment) return
-      if (dbMain) return lookUpByQueryArray(key, dbMain);
-      return lookUpInFragment(key, dbFragment);
+      if (dbMain) return lookUpByKeyQueryArray(key, dbMain);
+      return lookUpInFragmentByKey(key, dbFragment);
     }
 
     function lookUpById(id, { dbMain, dbFragment }) {
       dbFragment = getProperFragment(dbMain, dbFragment);
-
+      if (!dbFragment) return
+      if (dbMain) return lookUpByIdQueryArray(key, dbMain);
+      return lookUpInFragmentById(key, dbFragment);
     }
 
     function deleteFromDBByKey(key, { dbMain, dbFragment }) {
@@ -141,22 +185,39 @@
       OPEN_DB[dbFragment].properties.isChanged = true;
     }
 
-
-    function lookUpByQueryArray(key, dbMain) {
+    function lookUpByKeyQueryArray(key, dbMain) {
       const { dbFragments } = INDEX[dbMain];
       let entry = null;
       Object.keys(dbFragments).forEach(dbFragment => {
-        const { queryArray } = dbFragments[dbFragment];
-        if (!queryArray.includes(key)) return;
+        const { keyQueryArray } = dbFragments[dbFragment];
+        if (!keyQueryArray.includes(key)) return;
         openDBFragment(dbMain, dbFragment);
-        entry = lookUpInFragment(key, dbFragment)
+        entry = lookUpInFragmentByKey(key, dbFragment)
       })
       return entry
     }
 
-    function lookUpInFragment(key, dbFragment) {
+    function lookUpByIdQueryArray(key, dbMain) {
+      const { dbFragments } = INDEX[dbMain];
+      let entry = null;
+      Object.keys(dbFragments).forEach(dbFragment => {
+        const { idQueryArray } = dbFragments[dbFragment];
+        if (!idQueryArray.includes(id)) return;
+        openDBFragment(dbMain, dbFragment);
+        entry = lookUpInFragmentByKey(id, dbFragment)
+      })
+      return entry
+    }
+
+    function lookUpInFragmentByKey(key, dbFragment) {
       const { toWrite } = OPEN_DB[dbFragment];
       const id = toWrite.index[key];
+      const entry = toWrite.data[id];
+      return entry;
+    }
+
+    function lookUpInFragmentById(id, dbFragment) {
+      const { toWrite } = OPEN_DB[dbFragment];
       const entry = toWrite.data[id];
       return entry;
     }
@@ -280,7 +341,8 @@
     }
 
     function IndexEntry() {
-      this.queryArray = [];
+      this.keyQueryArray = [];
+      this.idQueryArray = [];
       this.externalConfigs = {};
       this.ignoreIndex = false;
       this.fileId = "";
@@ -292,6 +354,7 @@
       addToDB,
       lookUpByKey,
       lookUpById,
+      lookupByCriteria,
       deleteFromDBByKey,
       deleteFromDBById,
       saveToDBFiles,
