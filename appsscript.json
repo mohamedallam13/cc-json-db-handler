@@ -1,14 +1,12 @@
 {
-  "timeZone": "Europe/Amsterdam",
+  "timeZone": "Europe/Brussels",
   "dependencies": {
-    "libraries": [
-      {
-        "userSymbol": "CCLIBRARIES",
-        "version": "0",
-        "libraryId": "1M-HVmwVCGEcG5fEOfYPWkNat4p8LZidFiC6vsUBtGTt74gc19ASNmJRh",
-        "developmentMode": true
-      }
-    ]
+    "libraries": [{
+      "userSymbol": "CCLIBRARIES",
+      "libraryId": "1M-HVmwVCGEcG5fEOfYPWkNat4p8LZidFiC6vsUBtGTt74gc19ASNmJRh",
+      "version": "0",
+      "developmentMode": true
+    }]
   },
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8"

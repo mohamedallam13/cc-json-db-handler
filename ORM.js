@@ -120,55 +120,6 @@
 
   }
 
-  // function createSchema(map, options = {}) {
-
-  //   function getSplitObj(rawObj) {
-  //     const { dbSplit } = options;
-  //     const properObj = getProperObj(rawObj);
-  //     let splitObj = {};
-  //     Object.entries(dbSplit).forEach(([db, propsArray]) => {
-  //       propsArray.forEach(key => {
-  //         if (!splitObj[db]) splitObj[db] = {};
-  //         splitObj[db][key] = properObj[key]
-  //       })
-  //     })
-  //     return splitObj;
-  //   }
-
-  //   function getProperObj(rawObj) {
-  //     const properObj = Object.entries(map).reduce((acc, [key, properties]) => {
-  //       let value;
-  //       if (Array.isArray(properties)) {
-  //         const innerSchema = properties[0];
-  //         value = innerSchema.getProperObj(rawObj);
-  //         return { ...acc, [key]: [value] }
-  //       }
-  //       value = applyConfigs(key, properties, rawObj);
-  //       return { ...acc, [key]: value }
-  //     }, {});
-  //     return properObj
-  //   }
-
-  //   function applyConfigs(key, properties, rawObj) {
-  //     let { validate, defaultValue, type, required, enums } = properties;
-  //     let value = rawObj[key];
-  //     if (required) if (!value || value == "") throw `${key} has to have a value!`;
-  //     if (defaultValue) value = value || defaultValue;
-  //     console.log(typeof value)
-  //     if (type) if (typeof value != type) throw `${key} does not have the correct type!`;
-  //     if (validate) if (!validate(value)) throw `${key} does not have a valid value!`;
-  //     if (enums) if (!enums.includes(value)) throw `${key} does not have a valid choices!`;
-  //     return value;
-  //   }
-  //   return {
-  //     map,
-  //     options,
-  //     getSplitObj,
-  //     getProperObj
-  //   }
-  // }
-
-
   class Model {
     constructor(schema, options) {
       this.schema = schema
@@ -364,7 +315,7 @@ function test_ORM() {
 
   const { Toolkit } = CCLIBRARIES;
   const { timestampCreate } = Toolkit;
-  const { createSchema, Model, Schema, saveDB } = ORM
+  const {  Model, Schema, saveDB } = ORM
 
   dbStart();
 
@@ -382,7 +333,6 @@ function test_ORM() {
     }
   }
 
-  // const statusSchema = createSchema(statusSchemaMap)
   const statusSchema = new Schema(statusSchemaMap)
 
   const userSchemaMap = {
@@ -404,15 +354,6 @@ function test_ORM() {
       type: "number"
     }
   };
-
-  // const userSchema = createSchema(userSchemaMap,
-  //   {
-  //     dbMain: DBMAIN,
-  //     dbSplit: {
-  //       core: ["name", "age", "email", 'key', 'id'],
-  //       aux: ['statusArr', 'key', 'id']
-  //     }
-  //   });
 
   const userSchema = new Schema(userSchemaMap,
     {
