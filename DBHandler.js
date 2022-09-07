@@ -126,11 +126,12 @@
     function lookUpDBMainByCriteria(criteria, dbMain) {
       const { dbFragments } = INDEX[dbMain];
       let entries = [];
-      const { id } = criteria.filter(criterionObj => criterionObj.param = "id")[0];
+      const idObj = getCriterionObjByParam(criteria, "id");
       Object.keys(dbFragments).forEach(dbFragment => {
         openDBFragment(dbMain, dbFragment);
         const { idQueryArray } = dbFragments[dbFragment];
-        if (id) {
+        if (idObj) {
+          const id = idObj.criterion;
           if (!idQueryArray.includes(id)) return;
           entry = lookUpInFragmentById(id, dbFragment)
           entries.push(entry)
@@ -149,27 +150,32 @@
       if (!criteria || criteria.length == 0) return entries;
       criteria.forEach(criterionObj => {
         const { param, path, criterion } = criterionObj
-        if (typeof criterion === 'function') {
-          entries.filter(entry => {
-            const value = getValueFromPath(path, param, entry);
-            return criterion(value)
-          });
-        } else {
-          entries = entries.filter(entry => {
-            const value = getValueFromPath(path, param, entry);
-            return value == criterion;
-          })
-        };
+        entries = entries.filter(entry => {
+          const value = getValueFromPath(path, param, entry);
+          if (!value) return true
+          if (typeof criterion === 'function') return criterion(value)
+          else return value == criterion;
+        })
       })
       return entries;
+    }
+
+    function getCriterionObjByParam(criteria, param) {
+      return criteria.filter(criterionObj => criterionObj.param = param)[0];
     }
 
     function getValueFromPath(path, param, entry) {
       let value;
       if (!path || path.length == 0) return entry[param]
-
-      path.forEach(pathParam => value = entry[pathParam])
-      value = value[param]
+      path.forEach((pathParam, i) => {
+        if (i == 0) {
+          value == entry[pathParam];
+        } else {
+          if (!value) return
+          value = value[pathParam]
+        }
+      })
+      if (value) value = value[param]
       return value
     }
 
@@ -216,7 +222,7 @@
       return entry
     }
 
-    function lookUpByIdQueryArray(key, dbMain) {
+    function lookUpByIdQueryArray(id, dbMain) {
       const { dbFragments } = INDEX[dbMain];
       let entry = null;
       Object.keys(dbFragments).forEach(dbFragment => {

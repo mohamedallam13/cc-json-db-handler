@@ -202,7 +202,7 @@
       const getSplitObj_ = getSplitObj.bind(this.schema);
 
       const properObj = getProperObj_(request);
-      augmentMethodsToEntryObj(properObj)
+      this.augmentMethodsToEntryObj(properObj)
       const splitProperObj = getSplitObj_(properObj);
       divideEntryToDB(splitProperObj, { dbMain, dbFragment });
       return properObj
@@ -214,7 +214,7 @@
       const getProperObj_ = getProperObj.bind(this.schema);
       const getSplitObj_ = getSplitObj.bind(this.schema);
       const entry = this.findById(id, { dbMain, dbFragment });
-      augmentMethodsToEntryObj(entry)
+      this.augmentMethodsToEntryObj(entry)
       if (entry == null) return null;
 
       const updateObj = getProperObj_(request, updateParam);
@@ -255,25 +255,56 @@
     findByKey(key) {
       const { dbMain, dbFragment } = this.options;
       let entry = this.assembleFromDBByKey(key, { dbMain, dbFragment });
-      augmentMethodsToEntryObj(entry)
+      this.augmentMethodsToEntryObj(entry)
       return entry
     }
 
     findById(id) {
       const { dbMain, dbFragment } = this.options;
       let entry = this.assembleFromDBById(id, { dbMain, dbFragment });
-      augmentMethodsToEntryObj(entry)
+      this.augmentMethodsToEntryObj(entry)
       return entry
     }
 
 
 
-    find(conditionsObj) {
+    find(criteria) {
       const { dbMain, dbFragment } = this.options;
-
+      const resultsAccumulator = this.findInEachConnection(criteria, { dbMain, dbFragment });
+      const resultsArray = this.getInteresctionOfArrays(resultsAccumulator);
+      return resultsArray
     }
 
     /////Utilities
+
+    //Accumulate queries of all components in 1 array
+    findInEachConnection(criteria, { dbMain, dbFragment }) {
+      let resultsAccumulator = [];
+      Object.entries(connectionsObj).forEach(([, connectionObj]) => {
+        const entries = connectionObj.lookupByCriteria(criteria, { dbMain, dbFragment })
+        resultsAccumulator = [...resultsAccumulator, entries];
+      });
+      return resultsAccumulator
+    }
+
+    //Iterate results array to count the occurance of id and compare it to the number of components, if they are equal this will mean that this entry has all its components and can be returned
+    getInteresctionOfArrays(resultsAccumulator) {
+      const resultsArray = [];
+      resultsAccumulator.forEach(entry => {
+        const { id } = entry.id
+        const allEntryComponentsById = [...resultsAccumulator].filter(entry_ => entry_.id.id == id);
+        const componentsCount = allEntryComponentsById.length;
+        //If count is correct, merge all components
+        if (componentsCount == connectionsObj.length) {
+          let completeEntry = {};
+          allEntryComponentsById.forEach(subEntry => completeEntry = { ...completeEntry, ...subEntry });
+          this.augmentMethodsToEntryObj(completeEntry)
+          resultsArray.push(completeEntry)
+        }
+      })
+      return resultsArray;
+    }
+
     divideEntryToDB(splitProperObj, { dbMain, dbFragment }) {
       Object.entries(splitProperObj).forEach(([db, obj]) => {
         connectionsObj[db].addToDB(obj, { dbMain, dbFragment });
