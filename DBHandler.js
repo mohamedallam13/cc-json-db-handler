@@ -148,7 +148,7 @@
       const { data } = toWrite;
       let entries = Object.values(data);
       if (!criteria || criteria.length == 0) return entries;
-      criteria.forEach(criterionObj => {
+      criteria.forEach((criterionObj = {}) => {
         const { param, path, criterion } = criterionObj
         entries = entries.filter(entry => {
           const value = getValueFromPath(path, param, entry);
