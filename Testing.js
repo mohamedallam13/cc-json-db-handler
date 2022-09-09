@@ -9,14 +9,52 @@
     const { init } = JSON_DB_HANDLER
 
     const SEQUENCES = [
-      ["add", "lookupId", "lookupCriteria", "deleteByKey", "deleteById", "save"]
+      ["add", "save"],
+      ["lookupId", "lookupKey", "lookupCriteria", "deleteByKey", "deleteById", "save"],
+      ["destroy"]
+    ]
+
+    const CRITERIA = [
+      [
+        {
+          param: "email",
+          criterion: "findMe@gmail.com"
+        },
+        {
+          param: "age",
+          criterion: function (age) { return age > 20 }
+        }
+      ],
+      [
+        {
+          param: "age",
+          criterion: function (age) { return age > 20 }
+        }
+      ]
     ]
 
     const SCENARIOS = [
       {
         dbMain: "CCONE",
         sequence: 0,
-        model: "preliminary"
+        model: "preliminary",
+        criteriaSet: 0
+      },
+      {
+        dbMain: "CCONE",
+        sequence: 1,
+        model: "preliminary",
+        criteriaSet: 1
+      },
+      {
+        dbMain: "CCONE",
+        sequence: 0,
+        model: "preliminary",
+        criteriaSet: 1
+      },
+      {
+        dbMain: "CCONE",
+        sequence: 2
       }
     ]
 
@@ -41,8 +79,10 @@
       const requests = [];
 
       for (var i = 0; i < COUNT; i++) {
+        const generatedEmail = generateRandomEmail();
         let request = {
-          key: generateRandomEmail(),
+          key: generatedEmail,
+          email: generatedEmail,
           id: i + 1,
           name: generateNameCombinations(),
           age: generateRandomAge(18, 49)
@@ -59,7 +99,7 @@
 
       let findMeAndDeleteRequest = {
         key: "findMeAndDelete@gmail.com",
-        id: i + 1,
+        id: i + 2,
         name: "Find Me And Delete",
         age: 34
       }
@@ -76,29 +116,33 @@
       return init(test_indexId);
     }
 
-    function testByScenarios(scenario = 0) {
-      const testScenario = SCENARIOS[scenario];
-      const { model, sequence, dbMain, dbFragment } = testScenario
-      testBySequence({ model, sequence, dbMain, dbFragment })
+    function testByScenarios(scenarios = []) {
+      if(scenarios.length == 0) scenarios = [0];
+      scenarios.forEach(scenario => {
+        const testScenario = SCENARIOS[scenario];
+        const { model, sequence, criteriaSet, dbMain, dbFragment } = testScenario
+        testBySequence({ model, sequence, criteriaSet, dbMain, dbFragment })
+      })
     }
 
-    function testBySequence({ model, sequence = 0, dbMain, dbFragment }) {
+    function testBySequence({ model, sequence = 0, criteriaSet = 0, dbMain, dbFragment }) {
       const methods = SEQUENCES[sequence]
-      testDBHandlerMethods({ model, methods, dbMain, dbFragment })
+      const criteria = CRITERIA[criteriaSet]
+      testDBHandlerMethods({ model, methods, criteria, dbMain, dbFragment })
     }
 
-    function testDBHandlerMethods({ model, methods = [], dbMain, dbFragment }) {
+    function testDBHandlerMethods({ model, methods = [], criteria = [], dbMain, dbFragment }) {
       const db = testDBStart()
-      const entries = TEST_ENTRIES[model]()
+      const entries = model ? TEST_ENTRIES[model]() : []
       methods.forEach(method => {
-        if (METHODS[method]) METHODS[method]({ db, entries, dbMain, dbFragment })
+        if (METHODS[method]) METHODS[method]({ db, entries, criteria, dbMain, dbFragment })
         else console.log(`Method "${method}" is not recognized`)
       })
     }
 
     // METHODS
 
-    function test_add({ db, entries }) {
+    function test_add({ db, entries, dbMain, dbFragment }) {
       console.log(`Total Add ${entries.length} entries: from`)
       entries.forEach(entry => {
         db.addToDB(entry, { dbMain, dbFragment })
@@ -106,7 +150,7 @@
       console.log(`Total Add ${entries.length} entries: to`)
     }
 
-    function test_lookupId({ db }) {
+    function test_lookupId({ db, dbMain, dbFragment }) {
       console.log("Lookup by Id: from")
       const id = 5;
       const entry = db.lookUpById(id, { dbMain, dbFragment });
@@ -114,7 +158,7 @@
       console.log("Lookup by Id: to")
     }
 
-    function test_lookupKey({ db }) {
+    function test_lookupKey({ db, dbMain, dbFragment }) {
       console.log("Lookup by key: from")
       const key = "findMe@gmail.com";
       const entry = db.lookUpByKey(key, { dbMain, dbFragment })
@@ -122,50 +166,40 @@
       console.log("Lookup by key: to")
     }
 
-    function test_lookupByCriteria({ db }) {
+    function test_lookupByCriteria({ db, criteria, dbMain, dbFragment }) {
       console.log("Lookup by criteria: from")
-      const criteria = [
-        {
-          param: "email",
-          criterion: "findMe@gmail.com"
-        },
-        {
-          param: "age",
-          criterion: function (age) { return age > 20 }
-        }
-      ]
-      const entry = db.lookupByCriteria(key, { criteria, dbFragment })
-      console.log(entry)
+      const entries = db.lookupByCriteria(criteria, { dbMain, dbFragment })
+      console.log(entries)
       console.log("Lookup by criteria: to")
     }
 
-    function test_deleteFromDBByKey() {
+    function test_deleteFromDBByKey({ db, dbMain, dbFragment }) {
       console.log("Delete by key: from")
       const key = "findMeAndDelete@gmail.com";
-      deleteFromDBByKey(key, { dbMain, dbFragment })
+      db.deleteFromDBByKey(key, { dbMain, dbFragment })
       console.log("Delete by key: to")
     }
 
-    function test_deleteFromDBById() {
+    function test_deleteFromDBById({ db, dbMain, dbFragment }) {
       console.log("Delete by id: from")
       const id = 5;
-      deleteFromDBById(id, { dbMain, dbFragment })
+      db.deleteFromDBById(id, { dbMain, dbFragment })
       console.log("Delete by id: to")
     }
 
-    function test_saveToDBFiles() {
+    function test_saveToDBFiles({ db }) {
       console.log("Save: from")
       db.saveToDBFiles();
       console.log("Save: to")
     }
 
-    function test_clearDB() {
+    function test_clearDB({ db, dbMain, dbFragment }) {
       console.log("Destroy: from")
       db.clearDB({ dbMain, dbFragment })
       console.log("Destroy: to")
     }
 
-    function test_destroyDB() {
+    function test_destroyDB({ db, dbMain, dbFragment }) {
       console.log("Destroy: from")
       db.destroyDB({ dbMain, dbFragment })
       console.log("Destroy: to")
@@ -322,7 +356,7 @@
 function testDBHandlerScenario() {
   const { test_DBHandler } = TESTING;
   const { testByScenarios } = test_DBHandler();
-  testByScenarios()
+  testByScenarios([3])
 }
 
 // function allORMTests() {
