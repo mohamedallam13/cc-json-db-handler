@@ -13,22 +13,22 @@
 
   let referencesObj;
   let sourcesIndex;
-  let sourcesUpdateObj;
+  let sourcesUpdateObj = {};
 
-  // let n = 1;
+  let n = 1;
 
   function run() {
-    startTriggers();
+    // startTriggers();
     getReferences();
     const aggregatedSources = extractSources(); // Get sources data from sources file and read sources
     dbStart();
     aggregatedSources.forEach((sourceObj, i) => {
-      // if(sourceObj.eventIndex > n) return;
+      if (sourceObj.eventIndex > n) return;
       processSource(sourceObj)
     }); // Process Every source
     augmentToSourcesIndex();
     saveSourcesIndex();
-    stopTriggers()
+    // stopTriggers()
   }
 
   function clearCache() {
@@ -126,8 +126,10 @@
     return !sourcesUpdateObj[primaryClassifierCode][eventIndex].seeded;
   }
 
-  function getDataFromSource(sourceObj) {
+  function getDataFromSource(sourceObj, i) {
+    if (i > n) return
     const { ssid, sheetName, headerRow, skipRows, column } = sourceObj;
+    console.log(`Started Reading Source ${sourceObj.secondaryClassifierCode}..`)
     const parseObj = { headerRow, skipRows }
     const ssMan = imp.createSpreadsheetManager(ssid).addSheets([sheetName]);
     const sheetObj = ssMan.sheets[sheetName]
@@ -137,6 +139,7 @@
       sheetObj.columnToArray(column);
       sourceObj[column] = sheetObj.column;
     };
+    console.log("Finished Reading Source")
   }
 
   function processSource(sourceObj) {
@@ -144,8 +147,9 @@
     const { counter } = sourcesUpdateObj[primaryClassifierCode][eventIndex]
     entries.slice(counter).forEach((entry, i) => {
       console.log(entry);
-
-      // API.handleRequest(entry, secondaryClassifierCode);
+      const cleanEntry = DATA_REFIT.cleanEntries(sourceObj, entry);
+      GSCRIPT_ROUTER.route(primaryClassifierCode, cleanEntry);
+      // API.handleRequest(cleanEntry, secondaryClassifierCode);
       addToCounters(primaryClassifierCode, eventIndex, i);
     })
     markSourceAsDone(primaryClassifierCode, eventIndex);

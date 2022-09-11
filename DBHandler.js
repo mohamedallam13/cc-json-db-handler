@@ -8,7 +8,6 @@
 
   const MAX_ENTRIES_COUNT = 100;
 
-
   function init(indexFileId) {
     if (!indexFileId) return null
 
@@ -51,13 +50,13 @@
     function clearFragment(dbMain, dbFragment) {
       const { fileId } = INDEX[dbMain].dbFragments[dbFragment];
       Toolkit.writeToJSON(fileId, {});
-      INDEX[dbMain].dbFragments[dbFragment].queryArray = [];
+      INDEX[dbMain].dbFragments[dbFragment].keyQueryArray = [];
     }
 
     function destroyDB({ dbMain, dbFragment } = {}) {
-      if (!dbMain) Object.keys(INDEX).forEach(dbMain => destroyDBMain(dbMain));
+      if (!dbMain && !dbFragment) Object.keys(INDEX).forEach(dbMain => destroyDBMain(dbMain));
       else if (!dbFragment) destroyDBMain(dbMain);
-      else destroyFragment(dbFragment);
+      else destroyFragment(dbMain, dbFragment);
       saveIndex()
     }
 
@@ -72,7 +71,7 @@
       const { fragmentsList } = INDEX[dbMain].properties;
       Toolkit.deleteFile(fileId);
       delete INDEX[dbMain].dbFragments[dbFragment];
-      pull(fragmentsList, dbFragment)
+      pull(dbFragment, fragmentsList)
     }
 
     function saveToDBFiles() {
@@ -93,49 +92,206 @@
       if (saveIndexBool) saveIndex();
     }
 
-    function createNewFile(main, dbFragment, toWrite) {
-      const { dbFragments, properties } = INDEX[main];
+    function createNewFile(dbMain, dbFragment, toWrite) {
+      const { dbFragments, properties } = INDEX[dbMain];
       const { rootFolder, filesPrefix } = properties;
       fileId = createDBFile(toWrite, rootFolder, filesPrefix, dbFragment);
       dbFragments[dbFragment].fileId = fileId;
     }
 
     function addToDB(entry, { dbMain, dbFragment }) {
+      const { properties } = INDEX[dbMain];
+      const { cumulative } = properties
       dbFragment = getProperFragment(dbMain, dbFragment);
-      dbFragment = checkOpenDBSize(dbMain, dbFragment);
+      if (cumulative) dbFragment = checkOpenDBSize(dbMain, dbFragment);
       if (!dbFragment) return
       const { key, id } = entry;
-      OPEN_DB[dbFragment].toWrite.index[key] = id;
+      const { ignoreIndex } = INDEX[dbMain].dbFragments[dbFragment];
+      if (!ignoreIndex) {
+        OPEN_DB[dbFragment].toWrite.index[key] = id;
+        INDEX[dbMain].dbFragments[dbFragment].keyQueryArray.push(key);
+      }
       OPEN_DB[dbFragment].toWrite.data[id] = entry;
+      INDEX[dbMain].dbFragments[dbFragment].idQueryArray.push(id);
       OPEN_DB[dbFragment].properties.isChanged = true;
-      INDEX[dbMain].dbFragments[dbFragment].queryArray.push(key);
       return this
     }
 
-    function lookUp(key, { dbMain, dbFragment }) {
-      dbFragment = getProperFragment(dbMain, dbFragment);
-      if (!dbFragment) return
-      if (dbMain) return lookUpByQueryArray(key, dbMain);
-      return lookUpInFragment(key, dbFragment);
+    function lookupByCriteria(criteria = [], { dbMain, dbFragment }) {
+      if (dbMain && !dbFragment) return lookUpDBMainByCriteria(criteria, dbMain);
+      return lookUpFragmentByCriteria(criteria, dbMain, dbFragment);
     }
 
-    function lookUpByQueryArray(key, dbMain) {
+    function lookUpDBMainByCriteria(criteria, dbMain) {
       const { dbFragments } = INDEX[dbMain];
-      let entry = null;
+      let entries = [];
+      const idObj = getCriterionObjByParam(criteria, "id");
       Object.keys(dbFragments).forEach(dbFragment => {
-        const { queryArray } = dbFragments[dbFragment];
-        if (!queryArray.includes(key)) return;
         openDBFragment(dbMain, dbFragment);
-        entry = lookUpInFragment(key, dbFragment)
+        const { idQueryArray } = dbFragments[dbFragment];
+        if (idObj) {
+          const id = idObj.criterion;
+          if (!idQueryArray.includes(id)) return;
+          entry = lookUpInFragmentById(id, dbMain, dbFragment)
+          entries.push(entry)
+        } else {
+          entries = [...entries, ...lookUpFragmentByCriteria(criteria, dbMain, dbFragment)]
+        }
+        // closeFragment(dbFragment);
       })
+      return entries
+    }
+
+    function lookUpFragmentByCriteria(criteria, dbMain, dbFragment) {
+      openDBFragment(dbMain, dbFragment);
+      const { toWrite } = OPEN_DB[dbFragment];
+      const { data } = toWrite;
+      let entries = Object.values(data);
+      if (!criteria || criteria.length == 0) return entries;
+      criteria.forEach((criterionObj = {}) => {
+        const { param, path, criterion } = criterionObj
+        entries = lookUpEntriesByCriteria(entries, { param, path, criterion });
+      })
+      return entries;
+    }
+
+    function lookUpEntriesByCriteria(entries, { param, path, criterion }) {
+      return entries.filter(entry => {
+        const value = getValueFromPath(path, param, entry);
+        if (!value) return true
+        if (typeof criterion === 'function') return criterion(value)
+        else return value == criterion;
+      })
+    }
+
+    function getCriterionObjByParam(criteria, param) {
+      return criteria.filter(criterionObj => criterionObj.param == param)[0];
+    }
+
+    function getValueFromPath(path, param, entry) {
+      let value;
+      if (!path || path.length == 0) return entry[param]
+      path.forEach((pathParam, i) => {
+        if (i == 0) {
+          value == entry[pathParam];
+        } else {
+          if (!value) return
+          value = value[pathParam]
+        }
+      })
+      if (value) value = value[param]
+      return value
+    }
+
+    function lookUpByKey(key, { dbMain, dbFragment }) {
+      if (dbMain && !dbFragment) return lookUpByKeyQueryArray(key, dbMain);
+      return lookUpInFragmentByKey(key, dbMain, dbFragment);
+    }
+
+    function lookUpById(id, { dbMain, dbFragment }) {
+      if (dbMain && !dbFragment) return lookUpByIdQueryArray(id, dbMain);
+      return lookUpInFragmentById(id, dbMain, dbFragment);
+    }
+
+    function deleteFromDBByKey(key, { dbMain, dbFragment }) {
+      if (dbMain && !dbFragment) {
+        dbFragment = getFragmentFromQuerry(key, "keyQueryArray", dbMain);
+        if (!dbFragment) return
+      }
+      openDBFragment(dbMain, dbFragment);
+      const id = lookUpForIdInFragment(key, dbFragment);
+      deleteIdEntriesInFragment(id, dbFragment)
+      deleteFromQuerryArray(key, "keyQueryArray", dbMain, dbFragment)
+      deleteFromQuerryArray(id, "idQueryArray", dbMain, dbFragment)
+      // saveIndex()
+    }
+
+    function deleteFromDBById(id, { dbMain, dbFragment }) {
+      if (dbMain && !dbFragment) {
+        dbFragment = getFragmentFromQuerry(id, "idQueryArray", dbMain);
+        if (!dbFragment) return
+      }
+      openDBFragment(dbMain, dbFragment);
+      const keys = lookUpForKeysInFragment(id, dbFragment);
+      deleteIdEntriesInFragment(id, dbFragment)
+      deleteFromQuerryArray(keys, "keyQueryArray", dbMain, dbFragment)
+      deleteFromQuerryArray(id, "idQueryArray", dbMain, dbFragment)
+      // saveIndex()
+    }
+
+    function deleteIdEntriesInFragment(id, dbFragment) {
+      const iterativeIndex = { ...OPEN_DB[dbFragment].toWrite.index }
+      Object.entries(iterativeIndex).forEach(([key, _id]) => {
+        if (id == _id) delete OPEN_DB[dbFragment].toWrite.index[key];
+      })
+      delete OPEN_DB[dbFragment].toWrite.data[id];
+      OPEN_DB[dbFragment].properties.isChanged = true;
+    }
+
+    function deleteFromQuerryArray(lookupKey, lookUpQuerryArray, dbMain, dbFragment) {
+      if (!Array.isArray(lookupKey)) lookupKey = [lookupKey];
+      const { dbFragments } = INDEX[dbMain];
+      const queryArray = dbFragments[dbFragment][lookUpQuerryArray];
+      if (!queryArray) return
+      lookupKey.forEach(oneLookUpKey => pull(oneLookUpKey, queryArray))
+    }
+
+    function lookUpByKeyQueryArray(key, dbMain) {
+      let entry = null;
+      const dbFragment = getFragmentFromQuerry(key, "keyQueryArray", dbMain);
+      if (!dbFragment) return
+      openDBFragment(dbMain, dbFragment);
+      entry = lookUpInFragmentByKey(key, dbMain, dbFragment)
       return entry
     }
 
-    function lookUpInFragment(key, dbFragment) {
+    function lookUpByIdQueryArray(id, dbMain) {
+      let entry = null;
+      const dbFragment = getFragmentFromQuerry(id, "idQueryArray", dbMain);
+      if (!dbFragment) return
+      openDBFragment(dbMain, dbFragment);
+      entry = lookUpInFragmentById(id, dbMain, dbFragment)
+      return entry
+    }
+
+    function getFragmentFromQuerry(lookupKey, lookupQuerryArray, dbMain) {
+      const { dbFragments } = INDEX[dbMain];
+      let foundDBFragment
+      Object.keys(dbFragments).forEach(dbFragment => {
+        const queryArray = dbFragments[dbFragment][lookupQuerryArray];
+        if (!queryArray) return
+        if (!queryArray.includes(lookupKey)) return;
+        foundDBFragment = dbFragment
+      })
+      return foundDBFragment
+    }
+
+    function lookUpInFragmentByKey(key, dbMain, dbFragment) {
+      openDBFragment(dbMain, dbFragment);
       const { toWrite } = OPEN_DB[dbFragment];
-      const id = toWrite.index[key];
+      const id = lookUpForIdInFragment(key, dbFragment);
       const entry = toWrite.data[id];
       return entry;
+    }
+
+    function lookUpInFragmentById(id, dbMain, dbFragment) {
+      openDBFragment(dbMain, dbFragment);
+      const { toWrite } = OPEN_DB[dbFragment];
+      const entry = toWrite.data[id];
+      return entry;
+    }
+
+    function lookUpForKeysInFragment(id, dbFragment) {
+      const { toWrite } = OPEN_DB[dbFragment];
+      const { index } = toWrite
+      const keys = Object.entries(index).filter(([_key, _id]) => _id == id).map(([_key]) => _key)
+      return keys
+    }
+
+    function lookUpForIdInFragment(key, dbFragment) {
+      const { toWrite } = OPEN_DB[dbFragment];
+      const id = toWrite.index[key];
+      return id
     }
 
     function createDBFile(toWrite, rootFolder, filesPrefix, dbFragment) {
@@ -232,9 +388,13 @@
       return null
     }
 
-    function pull(array, element) {
-      const index = array.indexOf(element);
-      if (index != -1) array.splice(element, 1);
+    function getExternalConfig(key, { dbMain, dbFragment }) {
+      return INDEX[dbMain].dbFragments[dbFragment].externalConfigs[key]
+    }
+
+    function addExternalConfig(key, value, { dbMain, dbFragment }) {
+      INDEX[dbMain].dbFragments[dbFragment].externalConfigs[key] = value;
+      //saveIndex();
     }
 
     function OpenDBEntry(dbMain, fragmentFileObj) {
@@ -254,19 +414,34 @@
     }
 
     function IndexEntry() {
-      this.queryArray = [];
+      this.keyQueryArray = [];
+      this.idQueryArray = [];
+      this.externalConfigs = {};
+      this.ignoreIndex = false;
       this.fileId = "";
+    }
+
+    function pull(element, array) {
+      const index = array.indexOf(element)
+      if (index != -1) array.splice(index, 1);
     }
 
     return {
       INDEX,
       OPEN_DB,
       addToDB,
-      lookUp,
+      lookUpByKey,
+      lookUpById,
+      lookupByCriteria,
+      deleteFromDBByKey,
+      deleteFromDBById,
       saveToDBFiles,
+      saveIndex,
       closeDB,
       clearDB,
-      destroyDB
+      destroyDB,
+      getExternalConfig,
+      addExternalConfig
     };
   }
 
@@ -276,57 +451,3 @@
   }
 
 })
-
-function test() {
-  const indexId = "1SQHe3W33uCD20bn-yWhpO89cqC_VEkXV";
-  const COUNT = 500;
-  const db = JSON_DB_HANDLER.init(indexId);
-
-  // console.log("Add: from")
-  // for (let i = 0; i < COUNT; i++) {
-  //   let request = {
-  //     key: generateRandomEmail(),
-  //     id: i + 1,
-  //     name: "Mohamed Allam"
-  //   }
-  //   if (i == 100) {
-  //     let x = 0;
-  //   }
-  //   db.addToDB(request, { dbMain: "CCONE" });
-  // }
-  // console.log("Add: to")
-
-  // /////
-  // console.log("Lookup: from")
-  // const entry = db.lookUp("wztlc6sk@gmail.com", { dbMain: "CCONE" });
-  // console.log(entry)
-  // console.log("Lookup: to")
-  // /////
-
-  // /////
-  // console.log("Save: from")
-  // db.saveToDBFiles();
-  // console.log("Save: to")
-  // /////
-
-
-  console.log("Destroy: from")
-  db.clearDB({ dbMain: "CCONE" })
-  console.log("Destroy: to")
-
-
-  console.log("Destroy: from")
-  db.destroyDB({ dbMain: "CCONE" });
-  console.log("Destroy: to")
-  const l = 0;
-  function generateRandomEmail() {
-    var chars = 'abcdefghijklmnopqrstuvwxyz1234567890';
-    const LENGTH = 8;
-    var string = '';
-    for (var ii = 0; ii < LENGTH; ii++) {
-      string += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return string + '@gmail.com';
-  }
-}
-

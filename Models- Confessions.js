@@ -23,9 +23,22 @@
 
   const statusSchema = new Schema(statusSchemaMap)
 
-  const confessionSchemaMap = {
+  const emailsSchemaMap = {
+    timestamp: {
+      type: "object",
+      defaultValue: timestampCreate()
+    },
+    status: {
+      type: "string",
+      defaultValue: 'pending',
+      enums: ['pending', 'posted', 'rejected', 'skipped']
+    }
+  }
+
+  const emailsSchema = new Schema(emailsSchemaMap)
+
+  const confessionsInfoSchemaMap = {
     confession: {
-      validate: () => { },
       defaultValue: "",
       type: "string"
     },
@@ -34,21 +47,33 @@
     },
     category: {
       type: "string"
-    },
-    statusArr: [statusSchema]
+    }
+  }
+
+  const confessionsInfoSchema = new Schema(confessionsInfoSchemaMap)
+
+  const confessionSchemaMap = {
+    confessionArr: [confessionsInfoSchema],
+    statusArr: [statusSchema],
+    emailsArr: [emailsSchema]
   };
 
 
   const confessionSchema = new Schema(confessionSchemaMap,
     {
-      dbMain: DBMAIN,
       dbSplit: {
-        core: ["name", "age", "email", 'key', 'id'],
-        aux: ['statusArr', 'key', 'id']
-      }
+        core: ["name", "age", 'key', 'id'],
+        aux: ['statusArr', 'key', 'id'],
+        secret: ["email"]
+      },
+      id: "sn",
+      key: "refNum",
+      base: "id"
     })
 
-  const model = new Model(confessionSchema, {});
+  const model = new Model(confessionSchema, {
+    dbMain: DBMAIN
+  });
 
   return model
 
