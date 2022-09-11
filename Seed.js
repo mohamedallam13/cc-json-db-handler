@@ -13,12 +13,12 @@
 
   let referencesObj;
   let sourcesIndex;
-  let sourcesUpdateObj;
+  let sourcesUpdateObj = {};
 
   let n = 1;
 
   function run() {
-    startTriggers();
+    // startTriggers();
     getReferences();
     const aggregatedSources = extractSources(); // Get sources data from sources file and read sources
     dbStart();

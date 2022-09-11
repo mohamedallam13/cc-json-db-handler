@@ -2,9 +2,12 @@
   root.GSCRIPT_ROUTER = factory()
 })(this, function () {
 
-  const { handleCompiledRequest } = CONTROLLER
+  const { getAllApplications } = CONTROLLER
 
   const Router = {
+    getAllApplications(request) {
+      getAllApplications(request)
+    },
     addUser(request) {
 
     },

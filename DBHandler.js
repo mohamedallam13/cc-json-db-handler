@@ -53,7 +53,7 @@
       INDEX[dbMain].dbFragments[dbFragment].keyQueryArray = [];
     }
 
-    function destroyDB({ dbMain, dbFragment }) {
+    function destroyDB({ dbMain, dbFragment } = {}) {
       if (!dbMain && !dbFragment) Object.keys(INDEX).forEach(dbMain => destroyDBMain(dbMain));
       else if (!dbFragment) destroyDBMain(dbMain);
       else destroyFragment(dbMain, dbFragment);

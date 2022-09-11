@@ -47,7 +47,7 @@
         return { ...acc, [key]: value }
       }, {});
       if (!Object.keys(options).length == 0) {
-        this.addId(properObj, rawObj)
+        this.addId(properObj)
         this.addKey(properObj, rawObj)
       }
       return properObj
@@ -77,17 +77,17 @@
     }
 
 
-    addId(properObj, rawObj) { //Private
+    addId(properObj) { //Private //Needs Checking
       const IdObj = function (id, dbMain, dbFragment) {
         this.id = id
         this.dbMain = dbMain;
         this.dbFragment = dbFragment;
       }
       const { id, dbMain, dbFragment } = this.options;
-      // const { dbMain, dbFragment } = rawObj;
       const _id = properObj[id];
       if (!_id) return
-      properObj.id = new IdObj(_id, dbMain, dbFragment)
+      properObj.id = id;
+      properObj._id = new IdObj(_id, dbMain, dbFragment);
     }
 
     addKey(properObj, rawObj) {  //Private
@@ -248,8 +248,8 @@
     getInteresctionOfArrays(resultsAccumulator) {
       const resultsArray = [];
       resultsAccumulator.forEach(entry => {
-        const { id } = entry.id
-        const allEntryComponentsById = [...resultsAccumulator].filter(entry_ => entry_.id.id == id);
+        const { id } = entry
+        const allEntryComponentsById = [...resultsAccumulator].filter(entry_ => entry_.id == id);
         const componentsCount = allEntryComponentsById.length;
         //If count is correct, merge all components
         if (componentsCount == connectionsObj.length) {
