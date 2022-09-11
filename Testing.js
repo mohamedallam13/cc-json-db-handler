@@ -30,10 +30,24 @@
           param: "age",
           criterion: function (age) { return age > 20 }
         }
+      ],
+      [
+        {
+          param: "age",
+          criterion: function (age) { return age > 20 },
+        },
+        {
+          param: "statusArr",
+          criterion: function (statusArr) { return statusArr.filter(function (statusObj) { return statusObj.status == "Done" }).length > 0 },
+        }
       ]
     ]
 
     const SCENARIOS = [
+      {
+        dbMain: "CCONE",
+        sequence: 2
+      },
       {
         dbMain: "CCONE",
         sequence: 0,
@@ -49,12 +63,35 @@
       {
         dbMain: "CCONE",
         sequence: 0,
-        model: "preliminary",
-        criteriaSet: 1
+        model: "preliminaryNested",
+        criteriaSet: 2
       },
       {
         dbMain: "CCONE",
-        sequence: 2
+        sequence: 1,
+        model: "preliminaryNested",
+        criteriaSet: 2
+      },
+      {
+        dbMain: "CCG",
+        dbFragment: "CCGS1R1",
+        sequence: 0,
+        model: "preliminaryNested",
+        criteriaSet: 2
+      },
+      {
+        dbMain: "CCG",
+        dbFragment: "CCGS1R1",
+        sequence: 1,
+        model: "preliminaryNested",
+        criteriaSet: 2
+      },
+      {
+        dbMain: "CCG",
+        dbFragment: "CCGS1R1",
+        sequence: 2,
+        model: "preliminaryNested",
+        criteriaSet: 1
       }
     ]
 
@@ -71,14 +108,15 @@
     }
 
     const TEST_ENTRIES = {
-      preliminary: test_createPreliminaryEntries,
+      preliminary: test_createPreliminaryEntries(),
+      preliminaryNested: test_createPreliminaryEntries({ nested: true }),
+      preliminaryNestedLimited: test_createPreliminaryEntries({ nested: true, count: 100 })
     }
 
-    function test_createPreliminaryEntries() {
-      const COUNT = 500;
+    function test_createPreliminaryEntries({ nested, count = 500 } = {}) {
       const requests = [];
 
-      for (var i = 0; i < COUNT; i++) {
+      for (var i = 0; i < count; i++) {
         const generatedEmail = generateRandomEmail();
         let request = {
           key: generatedEmail,
@@ -87,6 +125,7 @@
           name: generateNameCombinations(),
           age: generateRandomAge(18, 49)
         }
+        if (nested) request.statusArr = generateStatusArray()
         requests.push(request)
       }
 
@@ -117,7 +156,7 @@
     }
 
     function testByScenarios(scenarios = []) {
-      if(scenarios.length == 0) scenarios = [0];
+      if (scenarios.length == 0) scenarios = [0];
       scenarios.forEach(scenario => {
         const testScenario = SCENARIOS[scenario];
         const { model, sequence, criteriaSet, dbMain, dbFragment } = testScenario
@@ -133,7 +172,7 @@
 
     function testDBHandlerMethods({ model, methods = [], criteria = [], dbMain, dbFragment }) {
       const db = testDBStart()
-      const entries = model ? TEST_ENTRIES[model]() : []
+      const entries = model ? TEST_ENTRIES[model] : []
       methods.forEach(method => {
         if (METHODS[method]) METHODS[method]({ db, entries, criteria, dbMain, dbFragment })
         else console.log(`Method "${method}" is not recognized`)
@@ -238,10 +277,13 @@
         age: 34,
         email: "mh.allam@yahoo.com",
         status: "pending",
-        key: "mh.allam@yahoo.com",
         id: 1
       }]
       return requests
+    }
+
+    function test_createCCERRequests() {
+
     }
 
     function test_dbStart() {
@@ -280,9 +322,6 @@
           type: "string"
         },
         statusArr: [statusSchema],
-        key: {
-          type: "string"
-        },
         id: {
           type: "number"
         }
@@ -294,7 +333,10 @@
           dbSplit: {
             core: ["name", "age", "email", 'key', 'id'],
             aux: ['statusArr', 'key', 'id']
-          }
+          },
+          id: "id",
+          key: "email",
+          base: "key"
         });
 
       const model = new Model(userSchema, {});
@@ -303,9 +345,11 @@
     }
 
     function test_ORMModelMethods({ model }) {
+      test_dbStart();
       const requests = test_requests[model]()
-      const Model = test_models[models]()
-
+      const test_model = test_models[model]()
+      const users = requests.map(function (request) { return test_model.create(request) });
+      users[0].test()
 
     }
 
@@ -341,6 +385,29 @@
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
+  function generateStatusArray() {
+    const statusArr = [
+      [
+        {
+          timestamp: new Date(),
+          status: "Pending"
+        }
+      ],
+      [
+        {
+          timestamp: new Date(),
+          status: "Pending"
+        },
+        {
+          timestamp: new Date(),
+          status: "Done"
+        }
+      ]
+    ]
+    const randomStatusArray = statusArr[Math.floor(Math.random() * statusArr.length)];
+    return [...randomStatusArray];
+  }
+
 
   //// RETURNS
 
@@ -356,9 +423,23 @@
 function testDBHandlerScenario() {
   const { test_DBHandler } = TESTING;
   const { testByScenarios } = test_DBHandler();
-  testByScenarios([3])
+  const fixedScenarios = {
+    cumulativeDestroy: [0],
+    cumulativeSimpleCreateManipulateDestroy: [1, 2, 0],
+    cumulativeSimpleCreateManipulate: [1, 2],
+    cumulativeNestedCreateManipulateDestroy: [3, 4, 0],
+    cumulativeNestedCreateManipulate: [3, 4],
+    cumulativeNestedManipulate: [4],
+    fragmentSimpleCreateManipulateDestroy: [5, 6, 7],
+    fragmentSimpleCreateManipulate: [5, 6],
+    fragmentSimpleManipulate: [6],
+    fragmentADestroy: [7]
+  }
+  testByScenarios(fixedScenarios.fragmentADestroy)
 }
 
-// function allORMTests() {
-
-// }
+function allORMTests() {
+  const { test_ORM } = TESTING;
+  const { test_ORMModelMethods } = test_ORM()
+  test_ORMModelMethods({ model: "preliminary" })
+}

@@ -2,9 +2,7 @@
   root.GSCRIPT_ROUTER = factory()
 })(this, function () {
 
-  function route(path, request) {
-    return Router[path](request)
-  }
+  const { handleCompiledRequest } = CONTROLLER
 
   const Router = {
     addUser(request) {
@@ -13,10 +11,15 @@
     updateUser(request) {
 
     },
-    handleCompoundedRequest(request){
+    handleCompoundedRequest(request) {
 
     }
   }
+
+  function route(path, request) {
+    return Router[path](request)
+  }
+
 
   return {
     route

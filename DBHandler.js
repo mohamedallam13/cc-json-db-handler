@@ -56,7 +56,7 @@
     function destroyDB({ dbMain, dbFragment }) {
       if (!dbMain && !dbFragment) Object.keys(INDEX).forEach(dbMain => destroyDBMain(dbMain));
       else if (!dbFragment) destroyDBMain(dbMain);
-      else destroyFragment(dbFragment);
+      else destroyFragment(dbMain, dbFragment);
       saveIndex()
     }
 
@@ -92,16 +92,18 @@
       if (saveIndexBool) saveIndex();
     }
 
-    function createNewFile(main, dbFragment, toWrite) {
-      const { dbFragments, properties } = INDEX[main];
+    function createNewFile(dbMain, dbFragment, toWrite) {
+      const { dbFragments, properties } = INDEX[dbMain];
       const { rootFolder, filesPrefix } = properties;
       fileId = createDBFile(toWrite, rootFolder, filesPrefix, dbFragment);
       dbFragments[dbFragment].fileId = fileId;
     }
 
     function addToDB(entry, { dbMain, dbFragment }) {
+      const { properties } = INDEX[dbMain];
+      const { cumulative } = properties
       dbFragment = getProperFragment(dbMain, dbFragment);
-      dbFragment = checkOpenDBSize(dbMain, dbFragment);
+      if (cumulative) dbFragment = checkOpenDBSize(dbMain, dbFragment);
       if (!dbFragment) return
       const { key, id } = entry;
       const { ignoreIndex } = INDEX[dbMain].dbFragments[dbFragment];
@@ -117,7 +119,7 @@
 
     function lookupByCriteria(criteria = [], { dbMain, dbFragment }) {
       if (dbMain && !dbFragment) return lookUpDBMainByCriteria(criteria, dbMain);
-      return lookUpFragmentByCriteria(criteria, dbFragment);
+      return lookUpFragmentByCriteria(criteria, dbMain, dbFragment);
     }
 
     function lookUpDBMainByCriteria(criteria, dbMain) {
@@ -130,17 +132,18 @@
         if (idObj) {
           const id = idObj.criterion;
           if (!idQueryArray.includes(id)) return;
-          entry = lookUpInFragmentById(id, dbFragment)
+          entry = lookUpInFragmentById(id, dbMain, dbFragment)
           entries.push(entry)
         } else {
-          entries = [...entries, ...lookUpFragmentByCriteria(criteria, dbFragment)]
+          entries = [...entries, ...lookUpFragmentByCriteria(criteria, dbMain, dbFragment)]
         }
         // closeFragment(dbFragment);
       })
       return entries
     }
 
-    function lookUpFragmentByCriteria(criteria, dbFragment) {
+    function lookUpFragmentByCriteria(criteria, dbMain, dbFragment) {
+      openDBFragment(dbMain, dbFragment);
       const { toWrite } = OPEN_DB[dbFragment];
       const { data } = toWrite;
       let entries = Object.values(data);
@@ -182,12 +185,12 @@
 
     function lookUpByKey(key, { dbMain, dbFragment }) {
       if (dbMain && !dbFragment) return lookUpByKeyQueryArray(key, dbMain);
-      return lookUpInFragmentByKey(key, dbFragment);
+      return lookUpInFragmentByKey(key, dbMain, dbFragment);
     }
 
     function lookUpById(id, { dbMain, dbFragment }) {
       if (dbMain && !dbFragment) return lookUpByIdQueryArray(id, dbMain);
-      return lookUpInFragmentById(key, dbFragment);
+      return lookUpInFragmentById(id, dbMain, dbFragment);
     }
 
     function deleteFromDBByKey(key, { dbMain, dbFragment }) {
@@ -238,15 +241,16 @@
       const dbFragment = getFragmentFromQuerry(key, "keyQueryArray", dbMain);
       if (!dbFragment) return
       openDBFragment(dbMain, dbFragment);
-      entry = lookUpInFragmentByKey(key, dbFragment)
+      entry = lookUpInFragmentByKey(key, dbMain, dbFragment)
       return entry
     }
 
     function lookUpByIdQueryArray(id, dbMain) {
       let entry = null;
       const dbFragment = getFragmentFromQuerry(id, "idQueryArray", dbMain);
+      if (!dbFragment) return
       openDBFragment(dbMain, dbFragment);
-      entry = lookUpInFragmentById(id, dbFragment)
+      entry = lookUpInFragmentById(id, dbMain, dbFragment)
       return entry
     }
 
@@ -262,14 +266,16 @@
       return foundDBFragment
     }
 
-    function lookUpInFragmentByKey(key, dbFragment) {
+    function lookUpInFragmentByKey(key, dbMain, dbFragment) {
+      openDBFragment(dbMain, dbFragment);
       const { toWrite } = OPEN_DB[dbFragment];
       const id = lookUpForIdInFragment(key, dbFragment);
       const entry = toWrite.data[id];
       return entry;
     }
 
-    function lookUpInFragmentById(id, dbFragment) {
+    function lookUpInFragmentById(id, dbMain, dbFragment) {
+      openDBFragment(dbMain, dbFragment);
       const { toWrite } = OPEN_DB[dbFragment];
       const entry = toWrite.data[id];
       return entry;

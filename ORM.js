@@ -8,6 +8,7 @@
 
   function startConnection(indexFileIdsObj) {
     Object.entries(indexFileIdsObj).forEach(([connectionLabel, { indexFileId }]) => {
+      if (!indexFileId) return
       connectionsObj[connectionLabel] = init(indexFileId);
     })
     return connectionsObj
@@ -39,7 +40,7 @@
         if (Array.isArray(properties)) {
           const innerSchema = properties[0];
           value = innerSchema.getProperObj(rawObj);
-          if (checkArrayValueIsEmpty(value)) return { ...acc, [key]: [] }
+          if (this.checkArrayValueIsEmpty(value)) return { ...acc, [key]: [] }
           return { ...acc, [key]: [value] }
         }
         value = this.applyConfigs(key, properties, rawObj);
@@ -82,8 +83,8 @@
         this.dbMain = dbMain;
         this.dbFragment = dbFragment;
       }
-      const { id } = this.options;
-      const { dbMain, dbFragment } = rawObj;
+      const { id, dbMain, dbFragment } = this.options;
+      // const { dbMain, dbFragment } = rawObj;
       const _id = properObj[id];
       if (!_id) return
       properObj.id = new IdObj(_id, dbMain, dbFragment)
@@ -121,7 +122,7 @@
   }
 
   class Model {
-    constructor(schema, options) {
+    constructor(schema, options = {}) {
       this.schema = schema
       this.options = options
     }
@@ -143,19 +144,24 @@
           return innerEntry
         })
       }
-      Object.setPrototypeOf(entry, { populate });
+
+      const test = function () {
+        console.log("Working!")
+      }
+
+      Object.setPrototypeOf(entry, { populate, test });
     }
 
     create(request) {
-      const { getSplitObj, getProperObj } = this.schema;
-      const { dbMain, dbFragment } = this.options;
+      const { getSplitObj, getProperObj, options } = this.schema;
+      const { dbMain, dbFragment } = options;
       const getProperObj_ = getProperObj.bind(this.schema);
       const getSplitObj_ = getSplitObj.bind(this.schema);
 
       const properObj = getProperObj_(request);
       this.augmentMethodsToEntryObj(properObj)
       const splitProperObj = getSplitObj_(properObj);
-      divideEntryToDB(splitProperObj, { dbMain, dbFragment });
+      this.divideEntryToDB(splitProperObj, { dbMain, dbFragment });
       return properObj
     }
 
@@ -174,7 +180,7 @@
         else entry[key] = updateObj[key]
       })
       const splitProperObj = getSplitObj_(entry);
-      divideEntryToDB(splitProperObj, { dbMain, dbFragment });
+      this.divideEntryToDB(splitProperObj, { dbMain, dbFragment });
       return entry
     }
 
@@ -189,7 +195,7 @@
       const index = entry[arrayParam].findIndex(obj => obj[paramKey] == paramValue);
       if (index != -1) entry[arrayParam].splice(index, 1);
       const splitProperObj = getSplitObj_(entry);
-      divideEntryToDB(splitProperObj, { dbMain, dbFragment });
+      this.divideEntryToDB(splitProperObj, { dbMain, dbFragment });
       return this
     }
 
@@ -315,7 +321,7 @@ function test_ORM() {
 
   const { Toolkit } = CCLIBRARIES;
   const { timestampCreate } = Toolkit;
-  const {  Model, Schema, saveDB } = ORM
+  const { Model, Schema, saveDB } = ORM
 
   dbStart();
 
