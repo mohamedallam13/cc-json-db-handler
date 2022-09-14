@@ -7,8 +7,6 @@
   const { Toolkit } = CCLIBRARIES;
   const { timestampCreate } = Toolkit;
 
-  const DBMAIN = "CCMAIN"
-
   const statusSchemaMap = {
     timestamp: {
       type: "object",
@@ -62,19 +60,17 @@
   const confessionSchema = new Schema(confessionSchemaMap,
     {
       dbSplit: {
-        core: ["name", "age", 'key', 'id'],
-        aux: ['statusArr', 'key', 'id'],
-        secret: ["email"]
+        core: ['confessionArr', 'key', 'id', '_id'],
+        aux: ['statusArr', 'key', 'id', '_id'],
+        secret: ['emailsArr']
       },
-      id: "sn",
-      key: "refNum",
-      base: "id"
+      id: 'sn',
+      key: 'refNum',
+      base: 'id'
     })
 
-  const model = new Model(confessionSchema, {
-    dbMain: DBMAIN
-  });
-
-  return model
+  return {
+    CCMAIN: new Model(confessionSchema, { dbMain: "CCMAIN" })
+  }
 
 })
