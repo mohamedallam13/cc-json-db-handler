@@ -1,8 +1,8 @@
 ; (function (root, factory) {
-  root.SEED = factory()
+  root.DUMP_IT = factory()
 })(this, function () {
 
-  const { imp, Toolkit, TRIGGERS_MANAGER, REFERENCES_MANAGER } = CCLIBRARIES
+  const { imp, Toolkit, REFERENCES_MANAGER } = CCLIBRARIES
   const { startConnection, clearDB } = ORM
 
   const MASTER_INDEX_FILE_ID = "1ohC9kPnMxyptp8SadRBGAofibGiYTTev";
@@ -14,11 +14,12 @@
   let referencesObj;
   let sourcesIndex;
   let sourcesUpdateObj = {};
+  const DUMP_ID = "1Myh_Uh8lnY1QNf7wA9d68KimOYswL6HU";
+  let dump = []
 
   let n = 1;
 
-  function run() {
-    startTriggers();
+  function createDump() {
     getReferences();
     const aggregatedSources = extractSources(); // Get sources data from sources file and read sources
     dbStart();
@@ -28,40 +29,23 @@
     }); // Process Every source
     augmentToSourcesIndex();
     Toolkit.writeToJSON(DUMP_ID, dump)
-    saveSourcesIndex();
-    stopTriggers()
   }
 
-  function clearCache() {
-    stopTriggers()
+  function seedDump() {
+    dump = Toolkit.readFromJSON(DUMP_ID);
+    dump.forEach(entry => {
+      GSCRIPT_ROUTER.route(entry);
+    })
   }
 
   function reset() {
-    getReferences();
-    resetSourcesIndex();
-    dbClear();
-    saveSourcesIndex();
-  }
-
-  function resetSourcesIndex() {
-    Object.entries(sourcesIndex).forEach(([branchName, allDivisionObj]) => {
-      Object.entries(allDivisionObj).forEach(([divisionName, allActivitiesArray]) => {
-        allActivitiesArray.forEach((sourceObj, i) => {
-          sourcesIndex[branchName][divisionName][i].counter = 0;
-          sourcesIndex[branchName][divisionName][i].seeded = false;
-        })
-      })
-    })
+    dbStart();
+    clearDB();
   }
 
   function getReferences() {
     getRequiredIndexes();
     getSourcesIndex();
-  }
-
-  function dbClear() {
-    dbStart();
-    clearDB();
   }
 
   function dbStart() {
@@ -76,19 +60,6 @@
 
   function getSourcesIndex() {
     sourcesIndex = referencesObj.sourcesIndexed.fileContent;
-  }
-
-  function saveSourcesIndex() {
-    referencesObj.sourcesIndexed.update();
-  }
-
-  function startTriggers() {
-    TRIGGERS_MANAGER.setContinutaionTrigger("run");
-    sourcesUpdateObj = TRIGGERS_MANAGER.getContVariable("sourcesUpdateObj") || {};
-  }
-
-  function stopTriggers() {
-    TRIGGERS_MANAGER.deleteContinuationTrigger("run");
   }
 
   function extractSources() {
@@ -149,7 +120,8 @@
     entries.slice(counter).forEach((entry, i) => {
       console.log(entry);
       const cleanEntry = DATA_REFIT.refitToCompoundRequest(sourceObj, entry);
-      GSCRIPT_ROUTER.route(primaryClassifierCode, cleanEntry);
+      dump.push(cleanEntry);
+      // GSCRIPT_ROUTER.route(primaryClassifierCode, cleanEntry);
       addToCounters(primaryClassifierCode, eventIndex, i);
     })
     markSourceAsDone(primaryClassifierCode, eventIndex);
@@ -180,12 +152,10 @@
 
   function addToCounters(primaryClassifierCode, eventIndex, i) {
     sourcesUpdateObj[primaryClassifierCode][eventIndex].counter = i + 1;
-    TRIGGERS_MANAGER.addContVariable("sourcesUpdateObj", sourcesUpdateObj);
   }
 
   function markSourceAsDone(primaryClassifierCode, eventIndex) {
     sourcesUpdateObj[primaryClassifierCode][eventIndex].seeded = true;
-    TRIGGERS_MANAGER.addContVariable("sourcesUpdateObj", sourcesUpdateObj);
   }
 
   function augmentToSourcesIndex() {
@@ -204,21 +174,21 @@
   }
 
   return {
-    run,
+    createDump,
     reset,
-    clearCache
+    seedDump
   }
 
 })
 
-function run() {
-  SEED.run();
+function createDump() {
+  SEED.createDump();
+}
+
+function seedDump() {
+  SEED.seedDump();
 }
 
 function reset() {
-  SEED.reset();
-}
-
-function clearCache() {
   SEED.clearCache();
 }

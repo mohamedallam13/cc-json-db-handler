@@ -7,8 +7,6 @@
   const { Toolkit } = CCLIBRARIES;
   const { timestampCreate } = Toolkit;
 
-  const DBMAIN = "CCONE";
-
   const statusSchemaMap = {
     timestamp: {
       type: "object",
@@ -111,6 +109,10 @@
   }
   const userContactInfoSchema = new Schema(userContactInfoSchemaMap)
 
+  const createId = function(entry){
+    return "CCER" + "-" +new Date(entry.timestamp).valueOf();
+  }
+
   const userSchemaMap = {
     userInfoArr: [userInfoSchema],
     userContactInfo: [userContactInfoSchema],
@@ -121,25 +123,25 @@
     emailsArr: [emailsSchema],
     mergedAccountsArr: [mergedAccountsSchema],
     id: {
-      setValue: function () { },
+      setValue: createId,
       type: "number"
     }
   };
 
+
   const userSchema = new Schema(userSchemaMap,
     {
       dbSplit: {
-        core: ["name", "age", "email", 'key', 'id'],
-        aux: ['statusArr', 'key', 'id']
+        core: ['userInfoArr','userContactInfo', 'activities', 'emailsArr', 'mergedAccountsArr', 'key', 'id', '_id'],
+        aux: ['statusArr', 'key', 'id', '_id'],
+        secret: ['potentialConfessArr']
       },
-      id: "id",
-      key: "email",
-      base: "key"
+      id: 'id',
+      key: 'email',
+      base: 'key'
     });
 
-  const model = new Model(userSchema, {
-    dbMain: DBMAIN,
-  });
+  const model = new Model(userSchema, { dbMain: "CCONE" });
 
   return model
 

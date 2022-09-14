@@ -7,22 +7,25 @@
   const { init } = JSON_DB_HANDLER;
 
   function startConnection(indexFileIdsObj) {
-    Object.entries(indexFileIdsObj).forEach(([connectionLabel, { indexFileId }]) => {
+    Object.entries(indexFileIdsObj).forEach(([connectionLabel, { indexFileId, properties }]) => {
       if (!indexFileId) return
-      connectionsObj[connectionLabel] = init(indexFileId);
+      connectionsObj[connectionLabel] = {};
+      connectionsObj[connectionLabel].db = init(indexFileId);
+      connectionsObj[connectionLabel].properties = properties;
+
     })
     return connectionsObj
   }
 
   function saveDB() {
     Object.entries(connectionsObj).forEach(([, connectionObj]) => {
-      connectionObj.saveToDBFiles();
+      connectionObj.db.saveToDBFiles();
     });
   }
 
   function clearDB() {
     Object.entries(connectionsObj).forEach(([, connectionObj]) => {
-      connectionObj.destroyDB();
+      connectionObj.db.destroyDB();
     })
   }
 
@@ -145,11 +148,16 @@
         })
       }
 
+      const update = function (request, updateParam) {
+        const { id } = entry
+        return this.update(id, request, updateParam)
+      }
+
       const test = function () {
         console.log("Working!")
       }
 
-      Object.setPrototypeOf(entry, { populate, test });
+      Object.setPrototypeOf(entry, { populate, update, test });
     }
 
     create(request) {
@@ -201,12 +209,12 @@
 
     deleteByKey(key) {
       const { dbMain, dbFragment } = this.options;
-      Object.entries(connectionsObj).forEach(([, connectionObj]) => connectionObj.deleteFromDBByKey(key, { dbMain, dbFragment }));
+      Object.entries(connectionsObj).forEach(([, connectionObj]) => connectionObj.db.deleteFromDBByKey(key, { dbMain, dbFragment }));
     }
 
     deleteById(id) {
       const { dbMain, dbFragment } = this.options;
-      Object.entries(connectionsObj).forEach(([, connectionObj]) => connectionObj.deleteFromDBById(id, { dbMain, dbFragment }));
+      Object.entries(connectionsObj).forEach(([, connectionObj]) => connectionObj.db.deleteFromDBById(id, { dbMain, dbFragment }));
     }
 
     findByKey(key) {
@@ -227,7 +235,7 @@
 
     find(criteria) {
       const { dbMain, dbFragment } = this.options;
-      const resultsAccumulator = this.findInEachConnection(criteria, { dbMain, dbFragment });
+      const { resultsAccumulator, count } = this.findInEachConnection(criteria, { dbMain, dbFragment });
       const resultsArray = this.getInteresctionOfArrays(resultsAccumulator);
       return resultsArray
     }
@@ -237,22 +245,25 @@
     //Accumulate queries of all components in 1 array
     findInEachConnection(criteria, { dbMain, dbFragment }) {
       let resultsAccumulator = [];
+      let count = 0;
       Object.entries(connectionsObj).forEach(([, connectionObj]) => {
-        const entries = connectionObj.lookupByCriteria(criteria, { dbMain, dbFragment })
+        //if secret return
+        const entries = connectionObj.db.lookupByCriteria(criteria, { dbMain, dbFragment })
         resultsAccumulator = [...resultsAccumulator, entries];
+        count++
       });
-      return resultsAccumulator
+      return { resultsAccumulator, count }
     }
 
     //Iterate results array to count the occurance of id and compare it to the number of components, if they are equal this will mean that this entry has all its components and can be returned
-    getInteresctionOfArrays(resultsAccumulator) {
+    getInteresctionOfArrays(resultsAccumulator, count) {
       const resultsArray = [];
       resultsAccumulator.forEach(entry => {
         const { id } = entry
         const allEntryComponentsById = [...resultsAccumulator].filter(entry_ => entry_.id == id);
         const componentsCount = allEntryComponentsById.length;
         //If count is correct, merge all components
-        if (componentsCount == connectionsObj.length) {
+        if (componentsCount == count) {
           let completeEntry = {};
           allEntryComponentsById.forEach(subEntry => completeEntry = { ...completeEntry, ...subEntry });
           this.augmentMethodsToEntryObj(completeEntry)
@@ -264,13 +275,14 @@
 
     divideEntryToDB(splitProperObj, { dbMain, dbFragment }) {
       Object.entries(splitProperObj).forEach(([db, obj]) => {
-        connectionsObj[db].addToDB(obj, { dbMain, dbFragment });
+        connectionsObj[db].db.addToDB(obj, { dbMain, dbFragment });
       });
     }
 
     assembleFromDBByKey(key, { dbMain, dbFragment }) {
       const assembledEntry = Object.entries(connectionsObj).reduce((acc, [, connectionObj]) => {
-        const entry = connectionObj.lookUpByKey(key, { dbMain, dbFragment }) || {};
+        //if secret, return
+        const entry = connectionObj.db.lookUpByKey(key, { dbMain, dbFragment }) || {};
         return { ...acc, ...entry }
       }, {});
       if (Object.keys(assembledEntry).length == 0) return null
@@ -280,7 +292,8 @@
 
     assembleFromDBById(id, { dbMain, dbFragment }) {
       const assembledEntry = Object.entries(connectionsObj).reduce((acc, [, connectionObj]) => {
-        const entry = connectionObj.lookUpById(id, { dbMain, dbFragment }) || {};
+        //if secret, return
+        const entry = connectionObj.db.lookUpById(id, { dbMain, dbFragment }) || {};
         return { ...acc, ...entry }
       }, {});
       if (Object.keys(assembledEntry).length == 0) return null
@@ -300,91 +313,6 @@
 
 })
 
-function dbStart() {
-  const { REFERENCES_MANAGER } = CCLIBRARIES;
-  const { startConnection } = ORM
-  const MASTER_INDEX_FILE_ID = "1ohC9kPnMxyptp8SadRBGAofibGiYTTev";
-  const REQUIRED_REFERENCES = ["CCJSONsDBSuperIndex"];
-  const referencesObj = REFERENCES_MANAGER.init(MASTER_INDEX_FILE_ID).requireFiles(REQUIRED_REFERENCES).requiredFiles;
-  const { CCJSONsDBSuperIndex } = referencesObj;
-  const connectionsObj = startConnection(CCJSONsDBSuperIndex.fileContent); // Start the Database
-  console.log(connectionsObj);
-}
-
-function test_ORMDestroy() {
-  const { clearDB } = ORM
-  dbStart();
-  clearDB();
-}
-
-function test_ORM() {
-
-  const { Toolkit } = CCLIBRARIES;
-  const { timestampCreate } = Toolkit;
-  const { Model, Schema, saveDB } = ORM
-
-  dbStart();
-
-  const DBMAIN = "CCONE";
-
-
-  const statusSchemaMap = {
-    timestamp: {
-      type: "object",
-      defaultValue: timestampCreate()
-    },
-    status: {
-      type: "string",
-      enums: ['pending', 'accepted', 'rejected', 'deferred']
-    }
-  }
-
-  const statusSchema = new Schema(statusSchemaMap)
-
-  const userSchemaMap = {
-    name: {
-      defaultValue: "",
-      type: "string"
-    },
-    age: {
-      type: "number"
-    },
-    email: {
-      type: "string"
-    },
-    statusArr: [statusSchema],
-    key: {
-      type: "string"
-    },
-    id: {
-      type: "number"
-    }
-  };
-
-  const userSchema = new Schema(userSchemaMap,
-    {
-      dbMain: DBMAIN,
-      dbSplit: {
-        core: ["name", "age", "email", 'key', 'id'],
-        aux: ['statusArr', 'key', 'id']
-      }
-    });
-
-  const model = new Model(userSchema, {});
-
-  const request = {
-    name: "Mohamed Allam",
-    age: 34,
-    email: "mh.allam@yahoo.com",
-    status: "pending",
-    key: "mh.allam@yahoo.com",
-    id: 1
-  }
-
-  model.add(request)
-  saveDB()
-  const x = 1;
-}
 
 function testCompile() {
   console.log("Compiled!")

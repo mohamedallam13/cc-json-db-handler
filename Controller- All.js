@@ -45,11 +45,13 @@
   }
 
   function getAllApplications({ divisionId, eventId }) {
+    // checkFragmentModel(divisionId, eventId);
     // return CCAPPLICATION[divisionId][eventId].find();
   }
 
   function getApplication(request) {
-    const { email, eventId } = request;
+    const { email, divisionId, eventId } = request;
+    // checkFragmentModel(divisionId, eventId);
     // return CCAPPLICATION[divisionId][eventId].findByKey(email);
   }
 
@@ -60,11 +62,13 @@
 
   function createNewConfession(request) {
     const { divisionId, eventId } = request;
+    // checkFragmentModel(divisionId, eventId);
     // return CONFESSION[divisionId][eventId].create(request);
   }
 
   function createNewApplication(request) {
     const { divisionId, eventId } = request;
+    // checkFragmentModel(divisionId, eventId);
     // return CCAPPLICATION[divisionId][eventId].create(request)
   }
 
@@ -106,6 +110,10 @@
 
   function warn() {
 
+  }
+
+  function checkFragmentModel(divisionId, eventId) {
+    if (!CCAPPLICATION[divisionId][eventId]) CCAPPLICATION[divisionId].createFragmentModel(eventId);
   }
 
 
