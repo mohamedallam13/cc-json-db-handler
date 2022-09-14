@@ -2,7 +2,7 @@
   root.GSCRIPT_ROUTER = factory()
 })(this, function () {
 
-  const { getAllApplications } = CONTROLLER
+  const { getAllApplications, handleCompiledApplicationRequest } = CONTROLLER
 
   const Router = {
     getAllApplications(request) {
@@ -15,7 +15,7 @@
 
     },
     handleCompoundedRequest(request) {
-
+      handleCompiledApplicationRequest(request)
     }
   }
 
