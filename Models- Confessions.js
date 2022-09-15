@@ -9,7 +9,6 @@
 
   const statusSchemaMap = {
     timestamp: {
-      type: "object",
       defaultValue: timestampCreate()
     },
     status: {
@@ -23,7 +22,6 @@
 
   const emailsSchemaMap = {
     timestamp: {
-      type: "object",
       defaultValue: timestampCreate()
     },
     status: {
@@ -45,15 +43,36 @@
     },
     category: {
       type: "string"
+    },
+    location: {
+      type: "string"
     }
   }
 
   const confessionsInfoSchema = new Schema(confessionsInfoSchemaMap)
 
+  const similarConfessionsSchemaMap = {
+    timestamp: {
+      defaultValue: timestampCreate()
+    },
+    confessionId: {
+      type: "IdObject"
+    }
+  }
+
+  const similarConfessionsSchema = new Schema(similarConfessionsSchemaMap)
+
   const confessionSchemaMap = {
+    timestamp: {
+      defaultValue: timestampCreate()
+    },
     confessionArr: [confessionsInfoSchema],
     statusArr: [statusSchema],
-    emailsArr: [emailsSchema]
+    similarConfessions: [similarConfessionsSchema],
+    emailsArr: [emailsSchema],
+    sn: {
+      type: "string"
+    }
   };
 
 

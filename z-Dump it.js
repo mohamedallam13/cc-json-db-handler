@@ -22,7 +22,6 @@
   function createDump() {
     getReferences();
     const aggregatedSources = extractSources(); // Get sources data from sources file and read sources
-    dbStart();
     aggregatedSources.forEach((sourceObj) => {
       if (sourceObj.eventIndex > n) return;
       processSource(sourceObj)
@@ -32,10 +31,13 @@
   }
 
   function seedDump() {
+    getReferences();
+    dbStart();
     dump = Toolkit.readFromJSON(DUMP_ID);
     dump.forEach(entry => {
-      GSCRIPT_ROUTER.route(entry);
+      GSCRIPT_ROUTER.route("handleCompiledApplicationRequest", entry);
     })
+    console.log(1)
   }
 
   function reset() {
@@ -121,7 +123,6 @@
       console.log(entry);
       const cleanEntry = DATA_REFIT.refitToCompoundRequest(sourceObj, entry);
       dump.push(cleanEntry);
-      // GSCRIPT_ROUTER.route(primaryClassifierCode, cleanEntry);
       addToCounters(primaryClassifierCode, eventIndex, i);
     })
     markSourceAsDone(primaryClassifierCode, eventIndex);
@@ -182,13 +183,13 @@
 })
 
 function createDump() {
-  SEED.createDump();
+  DUMP_IT.createDump();
 }
 
 function seedDump() {
-  SEED.seedDump();
+  DUMP_IT.seedDump();
 }
 
 function reset() {
-  SEED.clearCache();
+  DUMP_IT.clearCache();
 }

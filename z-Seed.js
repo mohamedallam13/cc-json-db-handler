@@ -215,10 +215,10 @@ function run() {
   SEED.run();
 }
 
-function reset() {
+function seedReset() {
   SEED.reset();
 }
 
-function clearCache() {
+function seedClearCache() {
   SEED.clearCache();
 }
