@@ -14,7 +14,6 @@
 
   const statusSchemaMap = {
     timestamp: {
-      type: "object",
       defaultValue: timestampCreate()
     },
     status: {
@@ -40,13 +39,10 @@
   const contactInfoSchema = new Schema(contactInfoSchemaMap)
 
   const mainQuestionsSchemaMap = {
-    email: {
+    pastActivities: {
       type: "string"
     },
-    mobile: {
-      type: "string"
-    },
-    facebook: {
+    background: {
       type: "string"
     }
   }
@@ -54,7 +50,6 @@
 
   const otherQuestionsSchemaMap = {
     timestamp: {
-      type: "object",
       defaultValue: timestampCreate()
     },
     other: {
@@ -65,6 +60,9 @@
   const otherQuestionsSchema = new Schema(otherQuestionsSchemaMap)
 
   const gatheringApplicationSchemaMap = {
+     timestamp: {
+      defaultValue: timestampCreate()
+    },
     userId: {
       type: "IdObject"
     },
@@ -74,7 +72,7 @@
     statusArr: [statusSchema],
     id: {
       setValue: createId,
-      type: "number"
+      type: "string"
     }
   };
 

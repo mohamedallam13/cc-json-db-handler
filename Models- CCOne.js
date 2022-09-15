@@ -9,7 +9,6 @@
 
   const statusSchemaMap = {
     timestamp: {
-      type: "object",
       defaultValue: timestampCreate()
     },
     status: {
@@ -23,13 +22,12 @@
 
   const rolesSchemaMap = {
     timestamp: {
-      type: "object",
       defaultValue: timestampCreate()
     },
     status: {
       type: "string",
-      defaultValue: 'Undecided',
-      enums: ['applicant', 'confessor']
+      defaultValue: 'undecided',
+      enums: ['undecided','applicant', 'confessor']
     }
   }
 
@@ -37,7 +35,6 @@
 
   const confessSNSchemaSchemaMap = {
     timestamp: {
-      type: "object",
       defaultValue: timestampCreate()
     },
     sn: {
@@ -49,7 +46,6 @@
 
   const activitiesSchemaMap = {
     timestamp: {
-      type: "object",
       defaultValue: timestampCreate()
     },
     applicationId: {
@@ -61,7 +57,6 @@
 
   const emailsSchemaMap = {
     timestamp: {
-      type: "object",
       defaultValue: timestampCreate()
     },
     email: {
@@ -74,7 +69,6 @@
   const mergedAccountsSchemaMap = {
     blankOnCreation: true,
     timestamp: {
-      type: "object",
       defaultValue: timestampCreate()
     },
     userId: {
@@ -124,7 +118,7 @@
     mergedAccountsArr: [mergedAccountsSchema],
     id: {
       setValue: createId,
-      type: "number"
+      type: "string"
     }
   };
 

@@ -23,6 +23,7 @@
     getBLabeledData(userRequestObj, sourceObj, processedHeaders, entry);
     refitUserData(userRequestObj);
     augmentInfo(sourceObj, userRequestObj);
+    getFillCheck(userRequestObj);
     return userRequestObj;
   }
 
@@ -78,6 +79,10 @@
     request.dbFragment = sourceObj.secondaryClassifierCode;
   }
 
+  function getFillCheck(request) {
+    if (request.firstName && request.gender) request.fillCheck = true
+  }
+
   function refitUserData(entry) {
     refitTimestamp_(entry);
     refitEmail(entry);
@@ -90,6 +95,7 @@
 
   function refitApplicationData(entry) {
     refitTimestamp_(entry);
+    refitMobile(entry);
     refitEmail(entry);
   }
 

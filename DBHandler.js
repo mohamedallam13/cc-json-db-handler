@@ -267,6 +267,7 @@
     }
 
     function lookUpInFragmentByKey(key, dbMain, dbFragment) {
+      if (!INDEX[dbMain].dbFragments[dbFragment]) return null
       openDBFragment(dbMain, dbFragment);
       const { toWrite } = OPEN_DB[dbFragment];
       const id = lookUpForIdInFragment(key, dbFragment);
@@ -275,6 +276,7 @@
     }
 
     function lookUpInFragmentById(id, dbMain, dbFragment) {
+      if (!INDEX[dbMain].dbFragments[dbFragment]) return null
       openDBFragment(dbMain, dbFragment);
       const { toWrite } = OPEN_DB[dbFragment];
       const entry = toWrite.data[id];
@@ -282,6 +284,7 @@
     }
 
     function lookUpForKeysInFragment(id, dbFragment) {
+      if (!INDEX[dbMain].dbFragments[dbFragment]) return null
       const { toWrite } = OPEN_DB[dbFragment];
       const { index } = toWrite
       const keys = Object.entries(index).filter(([_key, _id]) => _id == id).map(([_key]) => _key)
@@ -289,6 +292,7 @@
     }
 
     function lookUpForIdInFragment(key, dbFragment) {
+      if (!INDEX[dbMain].dbFragments[dbFragment]) return null
       const { toWrite } = OPEN_DB[dbFragment];
       const id = toWrite.index[key];
       return id

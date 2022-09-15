@@ -11,12 +11,11 @@
       confession = addNewEntryToExistingConfession(applicationRequest, confession);
     }
     if (!ccer) {
-      ccer = createNewCCer(userRequest);
+      ccer = createNewCCer({ ...userRequest, role: 'confessor' });
     } else {
       ccer = addNewEntryToExistingCCer(userRequest, ccer);
     }
     ccer = addConfessionToCCer(ccer, confession);
-    confession = addCCerToConfession(confession, ccer);
   }
 
   function handleCompiledApplicationRequest({ userRequest, applicationRequest }) {
@@ -29,7 +28,7 @@
       application = addNewEntryToExistingApplication(applicationRequest, application);
     }
     if (!ccer) {
-      ccer = createNewCCer(userRequest, application);
+      ccer = createNewCCer({ ...userRequest, role: 'applicant' });
       if (!fillCheck) {
         warn(application.email);
       }
@@ -45,39 +44,39 @@
   }
 
   function getAllApplications({ divisionId, eventId }) {
-    // checkFragmentModel(divisionId, eventId);
-    // return CCAPPLICATION[divisionId][eventId].find();
+    checkFragmentModel(divisionId, eventId);
+    return CCAPPLICATION[divisionId][eventId].find();
   }
 
   function getApplication(request) {
     const { email, divisionId, eventId } = request;
-    // checkFragmentModel(divisionId, eventId);
-    // return CCAPPLICATION[divisionId][eventId].findByKey(email);
+    checkFragmentModel(divisionId, eventId);
+    return CCAPPLICATION[divisionId][eventId].findByKey(email);
   }
 
   function getCCer(request) {
     const { email } = request;
-    // return CCER.findByKey(email);
+    return CCER.findByKey(email);
   }
 
   function createNewConfession(request) {
     const { divisionId, eventId } = request;
-    // checkFragmentModel(divisionId, eventId);
-    // return CONFESSION[divisionId][eventId].create(request);
+    checkFragmentModel(divisionId, eventId);
+    return CONFESSION[divisionId][eventId].create(request);
   }
 
   function createNewApplication(request) {
     const { divisionId, eventId } = request;
-    // checkFragmentModel(divisionId, eventId);
-    // return CCAPPLICATION[divisionId][eventId].create(request)
+    checkFragmentModel(divisionId, eventId);
+    return CCAPPLICATION[divisionId][eventId].create(request)
   }
 
   function createNewCCer(request) {
-    // return CCER.create(request)
+    return CCER.create(request)
   }
 
   function createNewCCerAndAddApplication(request, application) {
-    // return CCER.create(request).update({applicationId: application._id}, ["activities"])
+    return CCER.create(request).update({ applicationId: application._id }, ["activities"])
   }
 
   function addNewEntryToExistingCCer(request, ccer) {
@@ -97,15 +96,24 @@
   }
 
   function addApplicationToCCer(ccer, application) {
-    return ccer.update({ applicationId: application._id }, ["activities"])
+    const applicationId = application._id
+    console.log(applicationId)
+    const {id} = applicationId;
+    const idIncludedCheck = ccer.checkArrayParameterFor("activities", function(activityEntry){activityEntry.applicationId.id == id});
+    if(idIncludedCheck) return ccer
+    return ccer.update({ timestamp: application.timestamp ,applicationId: application._id }, ["activities"])
   }
 
-  function addCCerToConfession(confession, ccer) {
-    return confession.update({ ccerId: ccer._id }, ["ccer"])
-  }
+  // function addCCerToConfession(confession, ccer) {
+  //   return confession.update({ ccerId: ccer._id }, ["ccer"])
+  // }
 
   function addConfessionToCCer(ccer, confession) {
-    return ccer.update({ confessionId: confession._id }, ["potentialConfessArr"])
+    const confessionId = confession._id
+    const {id} = confessionId;
+    const idIncludedCheck = ccer.checkArrayParameterFor("potentialConfessArr", function(confessionEntry){confessionEntry.confessionId.id == id});
+    if(idIncludedCheck) return ccer
+    return ccer.update({ timestamp: confession.timestamp , confessionId: confession._id }, ["potentialConfessArr"])
   }
 
   function warn() {

@@ -14,7 +14,7 @@
     updateUser(request) {
 
     },
-    handleCompoundedRequest(request) {
+    handleCompiledApplicationRequest(request) {
       handleCompiledApplicationRequest(request)
     }
   }
