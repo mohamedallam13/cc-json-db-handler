@@ -138,7 +138,10 @@
     }
 
     augmentMethodsToEntryObj(entry) {
-      const update_ = this.update.bind(this);
+      const { dbSplit } = this.schema.map;
+      const update_ = this.updateEntry.bind(this);
+      const pull_ = this.pullFromEntry.bind(this);
+      const delete_ = this.deleteById.bind(this)
 
       const checkArrayParameterFor = function (param, filterFunc) {
         const arrayParam = this[param]
@@ -160,16 +163,42 @@
       }
 
       const update = function (request, updateParam) {
+        return update_(entry, request, updateParam);
+      }
+
+      const pull = function ([paramKey, paramValue], arrayParam) {
+        return pull_(entry, [paramKey, paramValue], arrayParam);
+      }
+
+      const remove = function () {
         const { id } = entry
-        return update_(id, request, updateParam)
-        return this
+        return delete_(id)
+      }
+
+      const sanitize = function () {
+        Object.entries(connectionsObj).forEach(([connectionLabel, connectionObj]) => {
+          const { properties } = connectionObj;
+          if (properties.isSecret) {
+            const fields = dbSplit[connectionLabel];
+            fields.forEach(field => delete entry[field])
+          }
+        })
+        dbSplit
       }
 
       const test = function () {
         console.log("Working!")
       }
 
-      Object.setPrototypeOf(entry, { populate, update, checkArrayParameterFor, test });
+      Object.setPrototypeOf(entry, {
+        populate,
+        update,
+        checkArrayParameterFor,
+        pull,
+        remove,
+        sanitize,
+        test
+      });
     }
 
     create(request) {
@@ -178,46 +207,28 @@
       const getProperObj_ = getProperObj.bind(this.schema);
       const getSplitObj_ = getSplitObj.bind(this.schema);
 
-      const properObj = getProperObj_(request);
-      this.augmentMethodsToEntryObj(properObj)
-      const splitProperObj = getSplitObj_(properObj);
-      this.divideEntryToDB(splitProperObj, { dbMain, dbFragment });
-      return properObj
-    }
-
-    update(id, request, updateParam) {
-      const { getSplitObj, getProperObj } = this.schema;
-      const { dbMain, dbFragment } = this.options;
-      const getProperObj_ = getProperObj.bind(this.schema);
-      const getSplitObj_ = getSplitObj.bind(this.schema);
-      const entry = this.findById(id, { dbMain, dbFragment });
+      const entry = getProperObj_(request);
       this.augmentMethodsToEntryObj(entry)
-      if (entry == null) return null;
-
-      const updateObj = getProperObj_(request, updateParam);
-      console.log(updateObj)
-      Object.entries(updateObj).forEach(([key, value]) => {
-        if (Array.isArray(value)) entry[key] = [...updateObj[key], ...entry[key]];
-        else entry[key] = updateObj[key]
-      })
+      entry._v = 0; // version of entry based on the update
       const splitProperObj = getSplitObj_(entry);
       this.divideEntryToDB(splitProperObj, { dbMain, dbFragment });
       return entry
     }
 
-    pull(id, [paramKey, paramValue], arrayParam) {
-      const { getSplitObj } = this.schema;
+    update(id, request, updateParam) {
       const { dbMain, dbFragment } = this.options;
-      const getSplitObj_ = getSplitObj.bind(this.schema);
-      const entry = this.findById(id, { dbMain, dbFragment });
+      const entry = this.findById(id, { dbMain, dbFragment }, { checkSecret: false });
+      this.augmentMethodsToEntryObj(entry)
+      if (entry == null) return null;
+      return updateEntry(entry, request, updateParam)
+    }
+
+    pull(id, [paramKey, paramValue], arrayParam) {
+      const { dbMain, dbFragment } = this.options;
+      const entry = this.findById(id, { dbMain, dbFragment }, { checkSecret: false });
       if (entry == null) return null;
       if (!entry[arrayParam]) return null;
-
-      const index = entry[arrayParam].findIndex(obj => obj[paramKey] == paramValue);
-      if (index != -1) entry[arrayParam].splice(index, 1);
-      const splitProperObj = getSplitObj_(entry);
-      this.divideEntryToDB(splitProperObj, { dbMain, dbFragment });
-      return this
+      return pullFromEntry(entry, [paramKey, paramValue], arrayParam)
     }
 
     deleteByKey(key) {
@@ -255,12 +266,39 @@
 
     /////Utilities
 
+    updateEntry(entry, request, updateParam) {
+      const { getSplitObj, getProperObj } = this.schema;
+      const { dbMain, dbFragment } = this.options;
+      const getProperObj_ = getProperObj.bind(this.schema);
+      const getSplitObj_ = getSplitObj.bind(this.schema);
+      const updateObj = getProperObj_(request, updateParam);
+      console.log(updateObj)
+      Object.entries(updateObj).forEach(([key, value]) => {
+        if (Array.isArray(value)) entry[key] = [...updateObj[key], ...entry[key]];
+        else entry[key] = updateObj[key]
+      })
+      entry._v++
+      const splitProperObj = getSplitObj_(entry);
+      this.divideEntryToDB(splitProperObj, { dbMain, dbFragment });
+      return entry
+    }
+
+    pullFromEntry(entry, [paramKey, paramValue], arrayParam) {
+      const { getSplitObj } = this.schema;
+      const { dbMain, dbFragment } = this.options;
+      const getSplitObj_ = getSplitObj.bind(this.schema);
+      const index = entry[arrayParam].findIndex(obj => obj[paramKey] == paramValue);
+      if (index != -1) entry[arrayParam].splice(index, 1);
+      const splitProperObj = getSplitObj_(entry);
+      this.divideEntryToDB(splitProperObj, { dbMain, dbFragment });
+    }
+
     //Accumulate queries of all components in 1 array
-    findInEachConnection(criteria, { dbMain, dbFragment }, secret) {
+    findInEachConnection(criteria, { dbMain, dbFragment }) {
       let resultsAccumulator = [];
       let count = 0;
       Object.entries(connectionsObj).forEach(([, connectionObj]) => {
-        if (secret) if (connectionObj.properties.isSecret && connectionObj.properties.secret != secret) return // Secret safeguard statement
+        // if (checkSecret && secret) if (connectionObj.properties.isSecret && connectionObj.properties.secret != secret) return // Secret safeguard statement
         const entries = connectionObj.db.lookupByCriteria(criteria, { dbMain, dbFragment })
         resultsAccumulator = [...resultsAccumulator, entries];
         count++
@@ -292,9 +330,9 @@
       });
     }
 
-    assembleFromDBByKey(key, { dbMain, dbFragment }, secret) {
+    assembleFromDBByKey(key, { dbMain, dbFragment }) {
       const assembledEntry = Object.entries(connectionsObj).reduce((acc, [, connectionObj]) => {
-        if (secret) if (connectionObj.properties.isSecret && connectionObj.properties.secret != secret) return // Secret safeguard statement
+        // if (checkSecret && secret) if (connectionObj.properties.isSecret && connectionObj.properties.secret != secret) return // Secret safeguard statement
         const entry = connectionObj.db.lookUpByKey(key, { dbMain, dbFragment }) || {};
         return { ...acc, ...entry }
       }, {});
@@ -303,9 +341,9 @@
     }
 
 
-    assembleFromDBById(id, { dbMain, dbFragment }, secret) {
+    assembleFromDBById(id, { dbMain, dbFragment }) {
       const assembledEntry = Object.entries(connectionsObj).reduce((acc, [, connectionObj]) => {
-        if (secret) if (connectionObj.properties.isSecret && connectionObj.properties.secret != secret) return // Secret safeguard statement
+        // if (checkSecret && secret) if (connectionObj.properties.isSecret && connectionObj.properties.secret != secret) return // Secret safeguard statement
         const entry = connectionObj.db.lookUpById(id, { dbMain, dbFragment }) || {};
         return { ...acc, ...entry }
       }, {});
