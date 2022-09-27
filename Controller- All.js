@@ -41,6 +41,7 @@
     }
     ccer = addApplicationToCCer(ccer, application)
     application = addCCerToApplication(application, ccer)
+    console.log(`Compiled application request handled successfully!`)
   }
 
   function getAllApplications({ divisionId, eventId }) {
@@ -92,7 +93,7 @@
   }
 
   function addCCerToApplication(application, ccer) {
-    return application.update({ ccerId: ccer._id }, ["ccer"])
+    return application.update({ ccerId: ccer._id }, ["ccerId"])
   }
 
   function addApplicationToCCer(ccer, application) {

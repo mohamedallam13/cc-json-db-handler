@@ -63,7 +63,7 @@
      timestamp: {
       defaultValue: timestampCreate()
     },
-    userId: {
+    ccerId: {
       type: "IdObject"
     },
     contactInfo: [contactInfoSchema],
@@ -80,7 +80,7 @@
     {
       dbSplit: {
         core: ['userId', 'contactInfo', 'mainQuestions', 'otherQuestions', 'key', 'id', '_id'],
-        aux: ['statusArr', 'key', 'id', '_id']
+        aux: ['statusArr']
       },
       id: 'id',
       key: 'email',

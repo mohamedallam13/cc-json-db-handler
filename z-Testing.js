@@ -443,3 +443,7 @@ function allORMTests() {
   const { test_ORMModelMethods } = test_ORM()
   test_ORMModelMethods({ model: "preliminary" })
 }
+
+function testCompile() {
+  console.log("Compiled!")
+}
