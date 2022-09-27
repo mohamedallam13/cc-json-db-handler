@@ -209,7 +209,3 @@
   }
 
 })
-
-function testCompile() {
-  console.log("Compiled!")
-}

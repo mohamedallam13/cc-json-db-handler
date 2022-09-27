@@ -37,18 +37,20 @@
 
     getProperObj(rawObj, updateKeys) {
       const { map, options } = this;
-      const properObj = Object.entries(map).reduce((acc, [key, properties]) => {
+       let properObj = {} 
+       Object.entries(map).forEach(([key, properties]) => {
         if (updateKeys) if (!updateKeys.includes(key)) return
         let value;
         if (Array.isArray(properties)) {
           const innerSchema = properties[0];
           value = innerSchema.getProperObj(rawObj);
-          if (this.checkArrayValueIsEmpty(value)) return { ...acc, [key]: [] }
-          return { ...acc, [key]: [value] }
+          if (this.checkArrayValueIsEmpty(value)) properObj = { ...properObj, [key]: [] }
+          else properObj = { ...properObj, [key]: [value] }
+        }else{
+          value = this.applyConfigs(key, properties, rawObj);
+          properObj = { ...properObj, [key]: value }                                   
         }
-        value = this.applyConfigs(key, properties, rawObj);
-        return { ...acc, [key]: value }
-      }, {});
+      });
       if (!Object.keys(options).length == 0 && !updateKeys) {
         this.addId(properObj, rawObj)
         this.addKey(properObj, rawObj)
@@ -105,7 +107,7 @@
         let bool = false;
         Object.entries(value).forEach(([key, val]) => {
           if (key == "timestamp") return
-          bool = val == "" && bool
+          bool = val == "" || bool
         })
         return bool
       }
@@ -183,7 +185,7 @@
             fields.forEach(field => delete entry[field])
           }
         })
-        dbSplit
+        return entry
       }
 
       const test = function () {
