@@ -85,11 +85,24 @@
         if (fileId == "") {
           createNewFile(main, dbFragment, toWrite);
         } else {
-          Toolkit.writeToJSON(fileId, toWrite);
+          mergeFragmentFiles(fileId, toWrite)
         }
         properties.isChanged = false;
       })
       if (saveIndexBool) saveIndex();
+    }
+
+    function mergeFragmentFiles(fileId, toWrite) {
+      const latestUpdatedFile = Toolkit.readFromJSON(fileId);
+      if (toWrite.index) toWrite.index = { ...latestUpdatedFile.index, ...toWrite.index }
+      if (toWrite.data) {
+        Object.entries(toWrite.data).forEach(([id, entry]) => {
+          const lastestEntry = latestUpdatedFile.data[id]
+          if (latestEntry._v > entry._v) toWrite.data[id] = lastestEntry;
+        })
+        toWrite.data = { ...latestUpdatedFile.data, ...toWrite.data }
+      }
+      Toolkit.writeToJSON(fileId, toWrite);
     }
 
     function createNewFile(dbMain, dbFragment, toWrite) {

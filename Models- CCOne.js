@@ -126,8 +126,8 @@
   const userSchema = new Schema(userSchemaMap,
     {
       dbSplit: {
-        core: ['userInfoArr','userContactInfo', 'activities', 'emailsArr', 'mergedAccountsArr', 'key', 'id', '_id'],
-        aux: ['statusArr', 'key', 'id', '_id'],
+        core: ['userInfoArr','userContactInfo', 'activities', 'emailsArr', 'mergedAccountsArr', 'key', 'id', '_id','_v'],
+        aux: ['statusArr'],
         secret: ['potentialConfessArr']
       },
       id: 'id',
