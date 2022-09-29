@@ -80,8 +80,8 @@
     {
       dbSplit: {
         core: ['confessionArr', 'key', 'id', '_id'],
-        aux: ['statusArr', 'key', 'id', '_id'],
-        secret: ['emailsArr']
+        aux: ['statusArr', 'key', 'id'],
+        secret: ['emailsArr', 'key', 'id']
       },
       id: 'sn',
       key: 'refNum',

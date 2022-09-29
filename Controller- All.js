@@ -33,7 +33,7 @@
         warn(application.email);
       }
     } else {
-      if (ccer.roles.includes("applicant") && !fillCheck) {
+      if (checkRole(ccer, "applicant") && !fillCheck) { // Check roles
         warn(applicationObj.email);
       } else {
         ccer = addNewEntryToExistingCCer(userRequest, ccer);
@@ -42,6 +42,11 @@
     ccer = addApplicationToCCer(ccer, application)
     application = addCCerToApplication(application, ccer)
     console.log(`Compiled application request handled successfully!`)
+  }
+  
+  function checkRole(ccer, role){
+    const roleCheck = ccer.checkArrayParameterFor("rolesArr", function(rolesEntry){return rolesEntry.role == role});
+    return roleCheck
   }
 
   function getAllApplications({ divisionId, eventId }) {
@@ -81,11 +86,11 @@
   }
 
   function addNewEntryToExistingCCer(request, ccer) {
-    return ccer.update(userRequest, ["userInfo", "contactInfo"])
+    return ccer.update(request, ["userInfo", "contactInfo"])
   }
 
   function addNewEntryToExistingApplication(request, application) {
-    return application.update()
+    return application.update(request, ["contactInfo","mainQuestions", "otherQuestions"])
   }
 
   function addNewEntryToExistingConfession(request, confession) {
@@ -93,14 +98,15 @@
   }
 
   function addCCerToApplication(application, ccer) {
-    return application.update({ ccerId: ccer._id }, ["ccerId"])
+    if(!application.ccerId) application.update({ ccerId: ccer._id }, ["ccerId"])
+    return application
   }
 
   function addApplicationToCCer(ccer, application) {
     const applicationId = application._id
     console.log(applicationId)
     const {id} = applicationId;
-    const idIncludedCheck = ccer.checkArrayParameterFor("activities", function(activityEntry){activityEntry.applicationId.id == id});
+    const idIncludedCheck = ccer.checkArrayParameterFor("activities", function(activityEntry){return activityEntry.applicationId.id == id});
     if(idIncludedCheck) return ccer
     return ccer.update({ timestamp: application.timestamp ,applicationId: application._id }, ["activities"])
   }

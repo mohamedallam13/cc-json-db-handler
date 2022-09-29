@@ -37,8 +37,11 @@
 
     getProperObj(rawObj, updateKeys) {
       const { map, options } = this;
-       let properObj = {} 
-       Object.entries(map).forEach(([key, properties]) => {
+      let properObj = {}
+      Object.entries(map).forEach(([key, properties]) => {
+        if(key == "mergedAccountsArr"){
+          console.log(`stop`)
+        }
         if (updateKeys) if (!updateKeys.includes(key)) return
         let value;
         if (Array.isArray(properties)) {
@@ -46,9 +49,9 @@
           value = innerSchema.getProperObj(rawObj);
           if (this.checkArrayValueIsEmpty(value)) properObj = { ...properObj, [key]: [] }
           else properObj = { ...properObj, [key]: [value] }
-        }else{
+        } else {
           value = this.applyConfigs(key, properties, rawObj);
-          properObj = { ...properObj, [key]: value }                                   
+          properObj = { ...properObj, [key]: value }
         }
       });
       if (!Object.keys(options).length == 0 && !updateKeys) {
@@ -63,7 +66,7 @@
       let value = rawObj[key];
       if (setValue) value = setValue(rawObj);
       if (required) if (!value || value == "") throw `${key} has to have a value!`;
-      if (defaultValue) value = value || defaultValue;
+      if (defaultValue !== undefined) if (!value) value = defaultValue;
       if (type) {
         if (type == "IdObject") {
           if (!value || value == "") {
@@ -91,10 +94,9 @@
       console.log(this.options)
       const _id = properObj[id];
       if (!_id) return
-      properObj.id = id;
+      properObj.id = _id;
       properObj._id = new IdObj(_id, dbMain, dbFragment);
       console.log(properObj._id)
-      var stop = 1
     }
 
     addKey(properObj, rawObj) {  //Private
@@ -104,12 +106,9 @@
 
     checkArrayValueIsEmpty(value) {  //Private
       if (typeof value == "object") {
-        let bool = false;
-        Object.entries(value).forEach(([key, val]) => {
-          if (key == "timestamp") return
-          bool = val == "" || bool
-        })
-        return bool
+        const filteredArr = Object.entries(value).filter(([key, val]) => key != "timestamp" && val != "");
+        if (filteredArr.length == 0) return true
+        return
       }
       return value == "";
     }
