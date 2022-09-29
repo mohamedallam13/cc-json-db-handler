@@ -447,3 +447,33 @@ function allORMTests() {
 function testCompile() {
   console.log("Compiled!")
 }
+
+function testController() {
+  const { REFERENCES_MANAGER } = CCLIBRARIES
+  const { startConnection } = ORM
+
+  const MASTER_INDEX_FILE_ID = "1ohC9kPnMxyptp8SadRBGAofibGiYTTev";
+  const REQUIRED_REFERENCES = ["CCJSONsDBSuperIndex", "sourcesIndexed"];
+
+  let referencesObj
+
+  function dbStart() {
+    const { CCJSONsDBSuperIndex } = referencesObj;
+    startConnection(CCJSONsDBSuperIndex.fileContent); // Start the Database
+  }
+
+  function getRequiredIndexes() {
+    referencesObj = REFERENCES_MANAGER.init(MASTER_INDEX_FILE_ID).requireFiles(REQUIRED_REFERENCES).requiredFiles;
+  }
+
+  getRequiredIndexes()
+  dbStart();
+  const { route } = GSCRIPT_ROUTER
+  // const ccer = route("getCCerByEmail", { email: "mahmoud.salama77@gmail.com" })
+  // const applications = route("getAllApplications", { divisionId: "CCG", eventId: "SIR3" })
+  // const application = route("getApplicationByEmail", { divisionId: "CCG", eventId: "SIR2", email: "mahmoud.salama77@gmail.com" })
+  const fullApplication = route("getFullApplicationByEmail", { divisionId: "CCG", eventId: "SIR2", email: "mahmoud.salama77@gmail.com" })
+  const fullApplications = route("getAllFullApplications", { divisionId: "CCG", eventId: "SIR3" })
+  console.log(`Loaded`)
+  console.log(`All done!`)
+}
