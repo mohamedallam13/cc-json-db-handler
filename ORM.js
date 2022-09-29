@@ -39,7 +39,7 @@
       const { map, options } = this;
       let properObj = {}
       Object.entries(map).forEach(([key, properties]) => {
-        if(key == "mergedAccountsArr"){
+        if (key == "mergedAccountsArr") {
           console.log(`stop`)
         }
         if (updateKeys) if (!updateKeys.includes(key)) return
@@ -142,7 +142,8 @@
       const { dbSplit } = this.schema.map;
       const update_ = this.updateEntry.bind(this);
       const pull_ = this.pullFromEntry.bind(this);
-      const delete_ = this.deleteById.bind(this)
+      const delete_ = this.deleteById.bind(this);
+      const assembleFromDBById_ = this.assembleFromDBById.bind(this);
 
       const checkArrayParameterFor = function (param, filterFunc) {
         const arrayParam = this[param]
@@ -154,13 +155,17 @@
 
       const populate = function (paramKey) {
         const idsArr = this[paramKey];
-        this[paramKey] = idsArr.map(idObj => {
-          const { id, dbMain, dbFragment } = idObj;
-          const innerEntry = assembleFromDBById(id, { dbMain, dbFragment });
-          Object.setPrototypeOf(innerEntry, { populate: this.populate });
-          return innerEntry
-        })
+        if (!idsArr) return this
+        if (Array.isArray(idsArr)) this[paramKey] = idsArr.map(getInnerEntry);
+        else this[paramKey] = getInnerEntry(idsArr);
         return this
+      }
+
+      function getInnerEntry(idObj) {
+        const { id, dbMain, dbFragment } = idObj;
+        const innerEntry = assembleFromDBById_(id, { dbMain, dbFragment });
+        // Object.setPrototypeOf(innerEntry, { populate: this.populate });
+        return innerEntry
       }
 
       const update = function (request, updateParam) {
@@ -207,7 +212,10 @@
       const { dbMain, dbFragment } = this.options;
       const getProperObj_ = getProperObj.bind(this.schema);
       const getSplitObj_ = getSplitObj.bind(this.schema);
-
+      //Add the model main and fragment not that coming in with the application request
+      request.dbMain = dbMain;
+      request.dbFragment = dbFragment;
+      //create the entry
       const entry = getProperObj_(request);
       this.augmentMethodsToEntryObj(entry)
       entry._v = 0; // version of entry based on the update
@@ -256,12 +264,10 @@
       return entry
     }
 
-
-
     find(criteria) {
       const { dbMain, dbFragment } = this.options;
       const { resultsAccumulator, count } = this.findInEachConnection(criteria, { dbMain, dbFragment });
-      const resultsArray = this.getInteresctionOfArrays(resultsAccumulator);
+      const resultsArray = this.getInteresctionOfArrays(resultsAccumulator, count);
       return resultsArray
     }
 
@@ -301,7 +307,8 @@
       Object.entries(connectionsObj).forEach(([, connectionObj]) => {
         // if (checkSecret && secret) if (connectionObj.properties.isSecret && connectionObj.properties.secret != secret) return // Secret safeguard statement
         const entries = connectionObj.db.lookupByCriteria(criteria, { dbMain, dbFragment })
-        resultsAccumulator = [...resultsAccumulator, entries];
+        if (entries == null) return
+        resultsAccumulator = [...resultsAccumulator, ...entries];
         count++
       });
       return { resultsAccumulator, count }

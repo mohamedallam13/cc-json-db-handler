@@ -34,7 +34,7 @@
     getReferences();
     dbStart();
     dump = Toolkit.readFromJSON(DUMP_ID);
-    dump.forEach(entry => {
+    dump.forEach((entry,i) => {
       GSCRIPT_ROUTER.route("handleCompiledApplicationRequest", entry);
       console.log(`saved!`)
     })

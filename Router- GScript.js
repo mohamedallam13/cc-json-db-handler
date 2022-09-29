@@ -2,20 +2,44 @@
   root.GSCRIPT_ROUTER = factory()
 })(this, function () {
 
-  const { getAllApplications, handleCompiledApplicationRequest } = CONTROLLER
+  const {
+    handleCompiledConfessionRequest,
+    handleCompiledApplicationRequest,
+    getCCerByEmail,
+    getAllApplications,
+    getAllFullApplications,
+    getApplications,
+    getApplicationByEmail,
+    getFullApplicationByEmail
+  } = CONTROLLER
 
   const Router = {
-    getAllApplications(request) {
-      getAllApplications(request)
-    },
     addUser(request) {
 
     },
     updateUser(request) {
 
     },
+    getCCerByEmail(request) {
+      return getCCerByEmail(request)
+    },
     handleCompiledApplicationRequest(request) {
-      handleCompiledApplicationRequest(request)
+      return handleCompiledApplicationRequest(request)
+    },
+    getAllApplications(request) {
+      return getAllApplications(request)
+    },
+    getAllFullApplications(request) {
+      return getAllFullApplications(request)
+    },
+    getApplicants(request) {
+      return getApplications(request)
+    },
+    getApplicationByEmail(request) {
+      return getApplicationByEmail(request)
+    },
+    getFullApplicationByEmail(request) {
+      return getFullApplicationByEmail(request)
     }
   }
 

@@ -19,8 +19,8 @@
   }
 
   function handleCompiledApplicationRequest({ userRequest, applicationRequest }) {
-    let ccer = getCCer(userRequest);
-    let application = getApplication(applicationRequest);
+    let ccer = getCCerByEmail(userRequest);
+    let application = getApplicationByEmail(applicationRequest);
     const { fillCheck } = userRequest;
     if (!application) {
       application = createNewApplication(applicationRequest);
@@ -43,9 +43,9 @@
     application = addCCerToApplication(application, ccer)
     console.log(`Compiled application request handled successfully!`)
   }
-  
-  function checkRole(ccer, role){
-    const roleCheck = ccer.checkArrayParameterFor("rolesArr", function(rolesEntry){return rolesEntry.role == role});
+
+  function checkRole(ccer, role) {
+    const roleCheck = ccer.checkArrayParameterFor("rolesArr", function (rolesEntry) { return rolesEntry.role == role });
     return roleCheck
   }
 
@@ -54,13 +54,33 @@
     return CCAPPLICATION[divisionId][eventId].find();
   }
 
-  function getApplication(request) {
+  function getAllFullApplications({ divisionId, eventId }) {
+    checkFragmentModel(divisionId, eventId);
+    const applications = CCAPPLICATION[divisionId][eventId].find();
+    applications.forEach(applicaiton => applicaiton.populate("ccerId"))
+    return applications
+  }
+
+  function getApplications(request) {
+    const { criteria, divisionId, eventId } = request;
+    checkFragmentModel(divisionId, eventId);
+    return CCAPPLICATION[divisionId][eventId].find(criteria);
+  }
+
+  function getApplicationByEmail(request) {
     const { email, divisionId, eventId } = request;
     checkFragmentModel(divisionId, eventId);
     return CCAPPLICATION[divisionId][eventId].findByKey(email);
   }
 
-  function getCCer(request) {
+  function getFullApplicationByEmail(request) {
+    const { email, divisionId, eventId } = request;
+    checkFragmentModel(divisionId, eventId);
+    const entry = CCAPPLICATION[divisionId][eventId].findByKey(email);
+    return entry.populate("ccerId")
+  }
+
+  function getCCerByEmail(request) {
     const { email } = request;
     return CCER.findByKey(email);
   }
@@ -90,7 +110,7 @@
   }
 
   function addNewEntryToExistingApplication(request, application) {
-    return application.update(request, ["contactInfo","mainQuestions", "otherQuestions"])
+    return application.update(request, ["contactInfo", "mainQuestions", "otherQuestions"])
   }
 
   function addNewEntryToExistingConfession(request, confession) {
@@ -98,17 +118,17 @@
   }
 
   function addCCerToApplication(application, ccer) {
-    if(!application.ccerId) application.update({ ccerId: ccer._id }, ["ccerId"])
+    if (!application.ccerId) application.update({ ccerId: ccer._id }, ["ccerId"])
     return application
   }
 
   function addApplicationToCCer(ccer, application) {
     const applicationId = application._id
     console.log(applicationId)
-    const {id} = applicationId;
-    const idIncludedCheck = ccer.checkArrayParameterFor("activities", function(activityEntry){return activityEntry.applicationId.id == id});
-    if(idIncludedCheck) return ccer
-    return ccer.update({ timestamp: application.timestamp ,applicationId: application._id }, ["activities"])
+    const { id } = applicationId;
+    const idIncludedCheck = ccer.checkArrayParameterFor("activities", function (activityEntry) { return activityEntry.applicationId.id == id });
+    if (idIncludedCheck) return ccer
+    return ccer.update({ timestamp: application.timestamp, applicationId: application._id }, ["activities"])
   }
 
   // function addCCerToConfession(confession, ccer) {
@@ -117,10 +137,10 @@
 
   function addConfessionToCCer(ccer, confession) {
     const confessionId = confession._id
-    const {id} = confessionId;
-    const idIncludedCheck = ccer.checkArrayParameterFor("potentialConfessArr", function(confessionEntry){confessionEntry.confessionId.id == id});
-    if(idIncludedCheck) return ccer
-    return ccer.update({ timestamp: confession.timestamp , confessionId: confession._id }, ["potentialConfessArr"])
+    const { id } = confessionId;
+    const idIncludedCheck = ccer.checkArrayParameterFor("potentialConfessArr", function (confessionEntry) { confessionEntry.confessionId.id == id });
+    if (idIncludedCheck) return ccer
+    return ccer.update({ timestamp: confession.timestamp, confessionId: confession._id }, ["potentialConfessArr"])
   }
 
   function warn() {
@@ -135,7 +155,12 @@
   return {
     handleCompiledConfessionRequest,
     handleCompiledApplicationRequest,
-    getAllApplications
+    getCCerByEmail,
+    getAllApplications,
+    getAllFullApplications,
+    getApplications,
+    getApplicationByEmail,
+    getFullApplicationByEmail
   }
 
 })
