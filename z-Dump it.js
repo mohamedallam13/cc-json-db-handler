@@ -3,7 +3,7 @@
 })(this, function () {
 
   const { imp, Toolkit, REFERENCES_MANAGER } = CCLIBRARIES
-  const { startConnection, clearDB } = ORM
+  const { startConnection, clearDB, saveDB } = ORM
 
   const MASTER_INDEX_FILE_ID = "1ohC9kPnMxyptp8SadRBGAofibGiYTTev";
   const TARGETED_BRANCHES = ["Events"]
@@ -36,8 +36,10 @@
     dump = Toolkit.readFromJSON(DUMP_ID);
     dump.forEach(entry => {
       GSCRIPT_ROUTER.route("handleCompiledApplicationRequest", entry);
+      console.log(`saved!`)
     })
-    console.log(1)
+    saveDB()
+    console.log(`Done dumping!`)
   }
 
   function reset() {

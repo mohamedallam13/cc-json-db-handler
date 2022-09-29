@@ -24,10 +24,10 @@
     timestamp: {
       defaultValue: timestampCreate()
     },
-    status: {
+    role: {
       type: "string",
       defaultValue: 'undecided',
-      enums: ['undecided','applicant', 'confessor']
+      enums: ['undecided', 'applicant', 'confessor']
     }
   }
 
@@ -67,7 +67,6 @@
   const emailsSchema = new Schema(emailsSchemaMap)
 
   const mergedAccountsSchemaMap = {
-    blankOnCreation: true,
     timestamp: {
       defaultValue: timestampCreate()
     },
@@ -98,13 +97,22 @@
       type: "string"
     },
     mobile: {
-      type: "string"
+      type: "string",
+      defaultValue: ""
     },
+    facebook: {
+      type: "string",
+      defaultValue: ""
+    },
+    twitter: {
+      type: "string",
+      defaultValue: ""
+    }
   }
   const userContactInfoSchema = new Schema(userContactInfoSchemaMap)
 
-  const createId = function(entry){
-    return "CCER" + "-" +new Date(entry.timestamp).valueOf();
+  const createId = function (entry) {
+    return "CCER" + "-" + new Date(entry.timestamp).valueOf();
   }
 
   const userSchemaMap = {
@@ -126,9 +134,9 @@
   const userSchema = new Schema(userSchemaMap,
     {
       dbSplit: {
-        core: ['userInfoArr','userContactInfo', 'activities', 'emailsArr', 'mergedAccountsArr', 'key', 'id', '_id','_v'],
-        aux: ['statusArr'],
-        secret: ['potentialConfessArr']
+        core: ['userInfoArr', 'userContactInfo', 'activities', 'emailsArr', 'mergedAccountsArr', 'rolesArr', 'key', 'id', '_id', '_v'],
+        aux: ['statusArr', 'key', 'id'],
+        secret: ['potentialConfessArr', 'key', 'id']
       },
       id: 'id',
       key: 'email',

@@ -122,10 +122,10 @@
       const { ignoreIndex } = INDEX[dbMain].dbFragments[dbFragment];
       if (!ignoreIndex) {
         OPEN_DB[dbFragment].toWrite.index[key] = id;
-        INDEX[dbMain].dbFragments[dbFragment].keyQueryArray.push(key);
+        if(!INDEX[dbMain].dbFragments[dbFragment].keyQueryArray.includes(key)) INDEX[dbMain].dbFragments[dbFragment].keyQueryArray.push(key); // If it is an update, do not readd the key
       }
       OPEN_DB[dbFragment].toWrite.data[id] = entry;
-      INDEX[dbMain].dbFragments[dbFragment].idQueryArray.push(id);
+      if(!INDEX[dbMain].dbFragments[dbFragment].idQueryArray.includes(id)) INDEX[dbMain].dbFragments[dbFragment].idQueryArray.push(id); // If it is an update, do not readd the id
       OPEN_DB[dbFragment].properties.isChanged = true;
       return this
     }
@@ -212,7 +212,7 @@
         if (!dbFragment) return
       }
       openDBFragment(dbMain, dbFragment);
-      const id = lookUpForIdInFragment(key, dbFragment);
+      const id = lookUpForIdInFragment(key, dbMain, dbFragment);
       deleteIdEntriesInFragment(id, dbFragment)
       deleteFromQuerryArray(key, "keyQueryArray", dbMain, dbFragment)
       deleteFromQuerryArray(id, "idQueryArray", dbMain, dbFragment)
@@ -225,7 +225,7 @@
         if (!dbFragment) return
       }
       openDBFragment(dbMain, dbFragment);
-      const keys = lookUpForKeysInFragment(id, dbFragment);
+      const keys = lookUpForKeysInFragment(id, dbMain, dbFragment);
       deleteIdEntriesInFragment(id, dbFragment)
       deleteFromQuerryArray(keys, "keyQueryArray", dbMain, dbFragment)
       deleteFromQuerryArray(id, "idQueryArray", dbMain, dbFragment)
@@ -252,7 +252,7 @@
     function lookUpByKeyQueryArray(key, dbMain) {
       let entry = null;
       const dbFragment = getFragmentFromQuerry(key, "keyQueryArray", dbMain);
-      if (!dbFragment) return
+      if (!dbFragment) return null
       openDBFragment(dbMain, dbFragment);
       entry = lookUpInFragmentByKey(key, dbMain, dbFragment)
       return entry
@@ -283,7 +283,8 @@
       if (!INDEX[dbMain].dbFragments[dbFragment]) return null
       openDBFragment(dbMain, dbFragment);
       const { toWrite } = OPEN_DB[dbFragment];
-      const id = lookUpForIdInFragment(key, dbFragment);
+      const id = lookUpForIdInFragment(key, dbMain, dbFragment);
+      if(!id) return null
       const entry = toWrite.data[id];
       return entry;
     }
@@ -296,7 +297,7 @@
       return entry;
     }
 
-    function lookUpForKeysInFragment(id, dbFragment) {
+    function lookUpForKeysInFragment(id, dbMain, dbFragment) {
       if (!INDEX[dbMain].dbFragments[dbFragment]) return null
       const { toWrite } = OPEN_DB[dbFragment];
       const { index } = toWrite
@@ -304,7 +305,7 @@
       return keys
     }
 
-    function lookUpForIdInFragment(key, dbFragment) {
+    function lookUpForIdInFragment(key, dbMain, dbFragment) {
       if (!INDEX[dbMain].dbFragments[dbFragment]) return null
       const { toWrite } = OPEN_DB[dbFragment];
       const id = toWrite.index[key];

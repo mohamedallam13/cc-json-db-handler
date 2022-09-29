@@ -8,8 +8,8 @@
   const { Toolkit } = CCLIBRARIES;
   const { timestampCreate } = Toolkit;
 
-  const createId = function(entry){
-    return entry.divisionId + "-" +new Date(entry.timestamp).valueOf();
+  const createId = function (entry) {
+    return entry.divisionId + "-" + new Date(entry.timestamp).valueOf();
   }
 
   const statusSchemaMap = {
@@ -30,20 +30,28 @@
       type: "string"
     },
     mobile: {
-      type: "string"
+      type: "string",
+      defaultValue: ""
     },
     facebook: {
-      type: "string"
+      type: "string",
+      defaultValue: ""
+    },
+    twitter: {
+      type: "string",
+      defaultValue: ""
     }
   }
   const contactInfoSchema = new Schema(contactInfoSchemaMap)
 
   const mainQuestionsSchemaMap = {
     pastActivities: {
-      type: "string"
+      type: "string",
+      defaultValue: ""
     },
     background: {
-      type: "string"
+      type: "string",
+      defaultValue: ""
     }
   }
   const mainQuestionsSchema = new Schema(mainQuestionsSchemaMap)
@@ -60,7 +68,7 @@
   const otherQuestionsSchema = new Schema(otherQuestionsSchemaMap)
 
   const gatheringApplicationSchemaMap = {
-     timestamp: {
+    timestamp: {
       defaultValue: timestampCreate()
     },
     ccerId: {
@@ -79,8 +87,8 @@
   const gatheringApplicationSchema = new Schema(gatheringApplicationSchemaMap,
     {
       dbSplit: {
-        core: ['userId', 'contactInfo', 'mainQuestions', 'otherQuestions', 'key', 'id', '_id'],
-        aux: ['statusArr']
+        core: ['ccerId', 'contactInfo', 'mainQuestions', 'otherQuestions', 'key', 'id', '_id'],
+        aux: ['statusArr', 'key', 'id']
       },
       id: 'id',
       key: 'email',
