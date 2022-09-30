@@ -377,7 +377,6 @@
     function checkOpenDBSize(dbMain, dbFragment) {
       const { toWrite } = OPEN_DB[dbFragment];
       const { data } = toWrite;
-      const len = Object.keys(data).length;
       if (Object.keys(data).length >= MAX_ENTRIES_COUNT) {
         dbFragment = createNewCumulativeFragment(dbMain, dbFragment);
         openDBFragment(dbMain, dbFragment);

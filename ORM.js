@@ -84,19 +84,20 @@
 
 
     addId(properObj, rawObj) { //Private //Needs Checking
-      const IdObj = function (id, dbMain, dbFragment) {
-        this.id = id
-        this.dbMain = dbMain;
-        this.dbFragment = dbFragment;
-      }
       const { id } = this.options;
       const { dbMain, dbFragment } = rawObj;
       console.log(this.options)
       const _id = properObj[id];
       if (!_id) return
       properObj.id = _id;
-      properObj._id = new IdObj(_id, dbMain, dbFragment);
+      properObj._id = new this.IdObj(_id, dbMain, dbFragment);
       console.log(properObj._id)
+    }
+
+    IdObj(id, dbMain, dbFragment) {
+      this.id = id
+      this.dbMain = dbMain;
+      this.dbFragment = dbFragment;
     }
 
     addKey(properObj, rawObj) {  //Private
@@ -140,6 +141,7 @@
 
     augmentMethodsToEntryObj(entry) {
       const { dbSplit } = this.schema.map;
+      const { IdObj } = this.schema;
       const update_ = this.updateEntry.bind(this);
       const pull_ = this.pullFromEntry.bind(this);
       const delete_ = this.deleteById.bind(this);
@@ -154,18 +156,35 @@
       }
 
       const populate = function (paramKey) {
+        if (Array.isArray(paramKey)) paramKey.forEach(populateSingleParamter.bind(this))
+        else populateSingleParamter.call(this, paramKey)
+        return this
+      }
+
+      const populateSingleParamter = function (paramKey) {
         const idsArr = this[paramKey];
         if (!idsArr) return this
         if (Array.isArray(idsArr)) this[paramKey] = idsArr.map(getInnerEntry);
         else this[paramKey] = getInnerEntry(idsArr);
-        return this
       }
 
-      function getInnerEntry(idObj) {
-        const { id, dbMain, dbFragment } = idObj;
+      const getInnerEntry = function (idObj_) {
+        idObj_ = extractIdObj(idObj_)
+        if (!idObj_ || !idObj_ instanceof Date || !idObj_.hasOwnProperty("id")) return idObj_
+        const { id, dbMain, dbFragment } = idObj_;
         const innerEntry = assembleFromDBById_(id, { dbMain, dbFragment });
-        // Object.setPrototypeOf(innerEntry, { populate: this.populate });
+        Object.setPrototypeOf(innerEntry, { populate });
         return innerEntry
+      }
+
+      const extractIdObj = function (idObj_) {
+        if (typeof idObj_ == "object") {
+          const entryArr = Object.entries(idObj_).filter(([, innerParam]) => {
+            return typeof innerParam == "object" && innerParam.hasOwnProperty("id")
+          })[0];
+          if (entryArr) idObj_ = entryArr[1]
+        }
+        return idObj_
       }
 
       const update = function (request, updateParam) {

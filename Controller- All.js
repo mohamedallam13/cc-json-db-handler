@@ -77,12 +77,19 @@
     const { email, divisionId, eventId } = request;
     checkFragmentModel(divisionId, eventId);
     const entry = CCAPPLICATION[divisionId][eventId].findByKey(email);
-    return entry.populate("ccerId")
+    return entry.populate(["ccerId"])
   }
 
   function getCCerByEmail(request) {
     const { email } = request;
     return CCER.findByKey(email);
+  }
+
+  function getFullCCerByEmail(request) {
+    const { email } = request;
+    const ccer = CCER.findByKey(email);
+    ccer.populate("activities")
+    return ccer;
   }
 
   function createNewConfession(request) {
@@ -156,6 +163,7 @@
     handleCompiledConfessionRequest,
     handleCompiledApplicationRequest,
     getCCerByEmail,
+    getFullCCerByEmail,
     getAllApplications,
     getAllFullApplications,
     getApplications,

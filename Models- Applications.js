@@ -87,7 +87,7 @@
   const gatheringApplicationSchema = new Schema(gatheringApplicationSchemaMap,
     {
       dbSplit: {
-        core: ['ccerId', 'contactInfo', 'mainQuestions', 'otherQuestions', 'key', 'id', '_id', '_v'],
+        core: ['timestamp', 'ccerId', 'contactInfo', 'mainQuestions', 'otherQuestions', 'key', 'id', '_id', '_v'],
         aux: ['statusArr', 'key', 'id']
       },
       id: 'id',
