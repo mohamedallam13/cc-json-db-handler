@@ -474,6 +474,7 @@ function testController() {
   // const application = route("getApplicationByEmail", { divisionId: "CCG", eventId: "SIR2", email: "mahmoud.salama77@gmail.com" })
   const fullApplication = route("getFullApplicationByEmail", { divisionId: "CCG", eventId: "SIR2", email: "mahmoud.salama77@gmail.com" })
   const fullApplications = route("getAllFullApplications", { divisionId: "CCG", eventId: "SIR3" })
+  const fullUser = route("getFullCCerByEmail", { email: "mahmoud.salama77@gmail.com" })
   console.log(`Loaded`)
   console.log(`All done!`)
 }

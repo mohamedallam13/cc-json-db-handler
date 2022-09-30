@@ -6,6 +6,7 @@
     handleCompiledConfessionRequest,
     handleCompiledApplicationRequest,
     getCCerByEmail,
+    getFullCCerByEmail,
     getAllApplications,
     getAllFullApplications,
     getApplications,
@@ -22,6 +23,9 @@
     },
     getCCerByEmail(request) {
       return getCCerByEmail(request)
+    },
+    getFullCCerByEmail(request){
+      return getFullCCerByEmail(request)
     },
     handleCompiledApplicationRequest(request) {
       return handleCompiledApplicationRequest(request)
