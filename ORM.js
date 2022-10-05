@@ -324,7 +324,6 @@
       let resultsAccumulator = [];
       let count = 0;
       Object.entries(connectionsObj).forEach(([, connectionObj]) => {
-        // if (checkSecret && secret) if (connectionObj.properties.isSecret && connectionObj.properties.secret != secret) return // Secret safeguard statement
         const entries = connectionObj.db.lookupByCriteria(criteria, { dbMain, dbFragment })
         if (entries == null) return
         resultsAccumulator = [...resultsAccumulator, ...entries];
@@ -359,7 +358,6 @@
 
     assembleFromDBByKey(key, { dbMain, dbFragment }) {
       const assembledEntry = Object.entries(connectionsObj).reduce((acc, [, connectionObj]) => {
-        // if (checkSecret && secret) if (connectionObj.properties.isSecret && connectionObj.properties.secret != secret) return // Secret safeguard statement
         const entry = connectionObj.db.lookUpByKey(key, { dbMain, dbFragment }) || {};
         return { ...acc, ...entry }
       }, {});
@@ -370,7 +368,6 @@
 
     assembleFromDBById(id, { dbMain, dbFragment }) {
       const assembledEntry = Object.entries(connectionsObj).reduce((acc, [, connectionObj]) => {
-        // if (checkSecret && secret) if (connectionObj.properties.isSecret && connectionObj.properties.secret != secret) return // Secret safeguard statement
         const entry = connectionObj.db.lookUpById(id, { dbMain, dbFragment }) || {};
         return { ...acc, ...entry }
       }, {});

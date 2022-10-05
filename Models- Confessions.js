@@ -79,7 +79,7 @@
   const confessionSchema = new Schema(confessionSchemaMap,
     {
       dbSplit: {
-        core: ['confessionArr', 'key', 'id', '_id', '_v'],
+        core: ['sn','confessionArr', 'key', 'id', '_id', '_v'],
         aux: ['statusArr', 'key', 'id'],
         secret: ['emailsArr', 'key', 'id']
       },
