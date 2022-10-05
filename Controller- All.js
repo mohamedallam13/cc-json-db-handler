@@ -77,7 +77,7 @@
     const { email, divisionId, eventId } = request;
     checkFragmentModel(divisionId, eventId);
     const entry = CCAPPLICATION[divisionId][eventId].findByKey(email);
-    return entry.populate(["ccerId"])
+    return entry.populate("ccerId")
   }
 
   function getCCerByEmail(request) {
@@ -150,6 +150,12 @@
     return ccer.update({ timestamp: confession.timestamp, confessionId: confession._id }, ["potentialConfessArr"])
   }
 
+  function updateApplicationStatus(request) {
+    const { email, divisionId, eventId, status } = request;
+    checkFragmentModel(divisionId, eventId);
+    return CCAPPLICATION[divisionId][eventId].findByKey(email).update({ status }, ["statusArr"])
+  }
+
   function warn() {
 
   }
@@ -168,7 +174,8 @@
     getAllFullApplications,
     getApplications,
     getApplicationByEmail,
-    getFullApplicationByEmail
+    getFullApplicationByEmail,
+    updateApplicationStatus
   }
 
 })

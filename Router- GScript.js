@@ -11,7 +11,8 @@
     getAllFullApplications,
     getApplications,
     getApplicationByEmail,
-    getFullApplicationByEmail
+    getFullApplicationByEmail,
+    updateApplicationStatus
   } = CONTROLLER
 
   const Router = {
@@ -24,7 +25,7 @@
     getCCerByEmail(request) {
       return getCCerByEmail(request)
     },
-    getFullCCerByEmail(request){
+    getFullCCerByEmail(request) {
       return getFullCCerByEmail(request)
     },
     handleCompiledApplicationRequest(request) {
@@ -44,6 +45,9 @@
     },
     getFullApplicationByEmail(request) {
       return getFullApplicationByEmail(request)
+    },
+    updateApplicationStatus(request) {
+      return updateApplicationStatus(request)
     }
   }
 
