@@ -57,7 +57,7 @@
   function getAllFullApplications({ divisionId, eventId }) {
     checkFragmentModel(divisionId, eventId);
     const applications = CCAPPLICATION[divisionId][eventId].find();
-    applications.forEach(applicaiton => applicaiton.populate("ccerId"))
+    applications.forEach(applicaiton => applicaiton.populate("ccer"))
     return applications
   }
 
@@ -77,7 +77,7 @@
     const { email, divisionId, eventId } = request;
     checkFragmentModel(divisionId, eventId);
     const entry = CCAPPLICATION[divisionId][eventId].findByKey(email);
-    return entry.populate("ccerId")
+    return entry.populate("ccer")
   }
 
   function getCCerByEmail(request) {
@@ -88,7 +88,7 @@
   function getFullCCerByEmail(request) {
     const { email } = request;
     const ccer = CCER.findByKey(email);
-    ccer.populate("activities")
+    ccer.populate("applicationsArr")
     return ccer;
   }
 
@@ -109,7 +109,7 @@
   }
 
   function createNewCCerAndAddApplication(request, application) {
-    return CCER.create(request).update({ applicationId: application._id }, ["activities"])
+    return CCER.create(request).update({ applicationId: application._id }, ["applicationsArr"])
   }
 
   function addNewEntryToExistingCCer(request, ccer) {
@@ -125,7 +125,7 @@
   }
 
   function addCCerToApplication(application, ccer) {
-    if (!application.ccerId) application.update({ ccerId: ccer._id }, ["ccerId"])
+    if (!application.ccer) application.update({ ccer: ccer._id }, ["ccer"])
     return application
   }
 
@@ -133,13 +133,13 @@
     const applicationId = application._id
     console.log(applicationId)
     const { id } = applicationId;
-    const idIncludedCheck = ccer.checkArrayParameterFor("activities", function (activityEntry) { return activityEntry.applicationId.id == id });
+    const idIncludedCheck = ccer.checkArrayParameterFor("applicationsArr", function (activityEntry) { return activityEntry.applicationId.id == id });
     if (idIncludedCheck) return ccer
-    return ccer.update({ timestamp: application.timestamp, applicationId: application._id }, ["activities"])
+    return ccer.update({ timestamp: application.timestamp, applicationId: application._id }, ["applicationsArr"])
   }
 
   // function addCCerToConfession(confession, ccer) {
-  //   return confession.update({ ccerId: ccer._id }, ["ccer"])
+  //   return confession.update({ ccer: ccer._id }, ["ccer"])
   // }
 
   function addConfessionToCCer(ccer, confession) {

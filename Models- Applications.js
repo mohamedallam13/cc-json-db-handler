@@ -2,7 +2,6 @@
   root.CCAPPLICATION = factory()
 })(this, function () {
 
-
   const { Schema, Model } = ORM;
 
   const { Toolkit } = CCLIBRARIES;
@@ -67,17 +66,42 @@
 
   const otherQuestionsSchema = new Schema(otherQuestionsSchemaMap)
 
+  const applicationCommentsSchemaMap = {
+    timestamp: {
+      defaultValue: timestampCreate()
+    },
+    comment: {
+      type: "string",
+      defaultValue: ""
+    }
+  }
+
+  const applicationCommentsSchema = new Schema(applicationCommentsSchemaMap)
+
   const gatheringApplicationSchemaMap = {
     timestamp: {
       defaultValue: timestampCreate()
     },
-    ccerId: {
+    ccer: {
       type: "IdObject"
     },
     contactInfo: [contactInfoSchema],
     mainQuestions: [mainQuestionsSchema],
     otherQuestions: [otherQuestionsSchema],
     statusArr: [statusSchema],
+    applicationComments: [applicationCommentsSchema],
+    currentStage: {
+      type: "string",
+      defaultValue: "screening"
+    },
+    nextStage: {
+      type: "string",
+      defaultValue: ""
+    },
+    followUp: {
+      type: "boolean",
+      defaultValue: false
+    },
     id: {
       setValue: createId,
       type: "string"
@@ -87,7 +111,7 @@
   const gatheringApplicationSchema = new Schema(gatheringApplicationSchemaMap,
     {
       dbSplit: {
-        core: ['timestamp', 'ccerId', 'contactInfo', 'mainQuestions', 'otherQuestions', 'key', 'id', '_id', '_v'],
+        core: ['timestamp', 'ccer', 'contactInfo', 'mainQuestions', 'otherQuestions', 'applicationComments', 'currentStage', 'nextStage', 'followUp', 'key', 'id', '_id', '_v'],
         aux: ['statusArr', 'key', 'id']
       },
       id: 'id',

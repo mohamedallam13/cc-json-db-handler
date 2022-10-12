@@ -34,7 +34,7 @@
     getReferences();
     dbStart();
     dump = Toolkit.readFromJSON(DUMP_ID);
-    dump.forEach((entry,i) => {
+    dump.forEach((entry, i) => {
       GSCRIPT_ROUTER.route("handleCompiledApplicationRequest", entry);
       console.log(`saved!`)
     })
@@ -43,6 +43,7 @@
   }
 
   function reset() {
+    getReferences();
     dbStart();
     clearDB();
   }
@@ -193,5 +194,5 @@ function seedDump() {
 }
 
 function reset() {
-  DUMP_IT.clearCache();
+  DUMP_IT.reset();
 }

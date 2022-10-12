@@ -44,7 +44,7 @@
 
   const confessSNSchema = new Schema(confessSNSchemaSchemaMap)
 
-  const activitiesSchemaMap = {
+  const applicationsSchemaMap = {
     timestamp: {
       defaultValue: timestampCreate()
     },
@@ -53,7 +53,33 @@
     }
   }
 
+  const applicationsSchema = new Schema(applicationsSchemaMap)
+
+  const activitiesSchemaMap = { //Needs to be fitted with a DB
+    activityId: {
+      type: "string",
+      defaultValue: ""
+    },
+    status: {
+      type: "string",
+      defaultValue: '',
+      enums: ['active', 'inactive', 'pending', '']
+    }
+  }
+
   const activitiesSchema = new Schema(activitiesSchemaMap)
+
+  const accessSchemaMap = {
+    timestamp: {
+      defaultValue: timestampCreate()
+    },
+    pages: {
+      type: "string",
+      defaultValue: ""
+    }
+  }
+
+  const accessSchema = new Schema(accessSchemaMap)
 
   const emailsSchemaMap = {
     timestamp: {
@@ -111,19 +137,34 @@
   }
   const userContactInfoSchema = new Schema(userContactInfoSchemaMap)
 
+  const profilePicSchemaMap = {
+    profilePicId: {
+      type: "string",
+      defaultValue: ""
+    }
+  }
+  const profilePicSchema = new Schema(profilePicSchemaMap)
+
   const createId = function (entry) {
     return "CCER" + "-" + new Date(entry.timestamp).valueOf();
   }
 
   const userSchemaMap = {
+    profilePicArr: [profilePicSchema],
     userInfoArr: [userInfoSchema],
     userContactInfo: [userContactInfoSchema],
     statusArr: [statusSchema],
     rolesArr: [roleSchema],
     potentialConfessArr: [confessSNSchema],
-    activities: [activitiesSchema],
+    applicationsArr: [applicationsSchema],
+    activitiesArr: [activitiesSchema],
+    access: [accessSchema],
     emailsArr: [emailsSchema],
     mergedAccountsArr: [mergedAccountsSchema],
+    banned: {
+      type: "boolean",
+      defaultValue: false
+    },
     id: {
       setValue: createId,
       type: "string"
@@ -134,7 +175,7 @@
   const userSchema = new Schema(userSchemaMap,
     {
       dbSplit: {
-        core: ['userInfoArr', 'userContactInfo', 'activities', 'emailsArr', 'mergedAccountsArr', 'rolesArr', 'key', 'id', '_id', '_v'],
+        core: ['profilePicArr','userInfoArr', 'userContactInfo', 'applicationsArr', 'activitiesArr','emailsArr', 'access','mergedAccountsArr', 'rolesArr', 'key', 'id', '_id', '_v'],
         aux: ['statusArr', 'key', 'id'],
         secret: ['potentialConfessArr', 'key', 'id']
       },
