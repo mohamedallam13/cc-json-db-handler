@@ -472,9 +472,9 @@ function testController() {
   const { route } = GSCRIPT_ROUTER
   // const ccer = route("getCCerByEmail", { email: "mahmoud.salama77@gmail.com" })
   // const applications = route("getAllApplications", { divisionId: "CCG", eventId: "SIR3" })
-  // const application = route("getApplicationByEmail", { divisionId: "CCG", eventId: "SIR2", email: "mahmoud.salama77@gmail.com" })
+  const application = route({path: "getApplicationByEmail",divisionId: "CCG", eventId: "SIR2", email: "mahmoud.salama77@gmail.com" })
   // const fullApplication = route("getFullApplicationByEmail", { divisionId: "CCG", eventId: "SIR2", email: "mahmoud.salama77@gmail.com" })
-  const fullApplications = route("getAllFullApplications", { divisionId: "CCG", eventId: "SIR3" })
+  // const fullApplications = route({ path: "getAllFullApplications", divisionId: "CCG", eventId: "SIR3" })
   // const fullUser = route("getFullCCerByEmail", { email: "mahmoud.salama77@gmail.com" })
   // const updatedApplication = route("updateApplicationStatus", { email: "mahmoud.salama77@gmail.com", divisionId: "CCG", eventId: "SIR2", status: "accepted" })
 

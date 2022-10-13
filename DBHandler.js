@@ -1,3 +1,4 @@
+const observer = {}
 ; (function (root, factory) {
   root.JSON_DB_HANDLER = factory()
 })(this, function () {
@@ -199,6 +200,7 @@
     }
 
     function lookUpByKey(key, { dbMain, dbFragment }) {
+      observer.inJSONDB = true
 
       if (dbMain && !dbFragment) return lookUpByKeyQueryArray(key, dbMain);
       return lookUpInFragmentByKey(key, dbMain, dbFragment);
