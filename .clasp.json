@@ -6,6 +6,7 @@
         "Models/Models-Applications.js",
         "Models/Models-CCOne.js",
         "Models/Models-Confessions.js",
+        "Controller/Controller-All.js",
         "Routes/Router-GScript.js",
         "Seeding/Data-Refit.js",
         "Seeding/Seed.js",

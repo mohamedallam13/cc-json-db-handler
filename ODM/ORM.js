@@ -272,7 +272,6 @@
     }
 
     findByKey(key) {
-      observer.inORM = true
       const { dbMain, dbFragment } = this.options;
       let entry = this.assembleFromDBByKey(key, { dbMain, dbFragment });
       if (entry !== null) this.augmentMethodsToEntryObj(entry)

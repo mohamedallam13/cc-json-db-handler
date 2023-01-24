@@ -3,7 +3,7 @@
 })(this, function () {
 
     let referencesObj
-    const { route } = ROUTER;
+    const { route } = GSCRIPT_ROUTER;
 
     const init = function () {
         const response = {}
