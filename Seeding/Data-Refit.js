@@ -143,8 +143,8 @@
       entry.district = entry.districtOther;
     }
     if (!entry.addressDistrict || entry.addressDistrict == '') {
-      var pre = entry.address ? entry.address : "";
-      entry.addressDistrict = pre + ", " + entry.district
+      var pre = entry.address ? entry.address + ", " : "";
+      entry.addressDistrict = pre + entry.district
     }
     delete entry.district;
     delete entry.address;

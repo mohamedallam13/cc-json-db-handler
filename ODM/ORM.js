@@ -39,12 +39,16 @@
       const { map, options } = this;
       let properObj = {}
       Object.entries(map).forEach(([key, properties]) => {
-        if (key == "mergedAccountsArr") {
-          console.log(`stop`)
-        }
         if (updateKeys) if (!updateKeys.includes(key)) return
         let value;
         if (Array.isArray(properties)) {
+          // const innerContent = properties[0];      ////////Suggested Modification
+          // if (innerContent.schema) {
+          //   const innerSchema = innerContent.schema
+          //   value = innerSchema.getProperObj(rawObj);
+          // } else {
+          //   value = this.applyConfigs(key, innerContent, rawObj);
+          // }
           const innerSchema = properties[0];
           value = innerSchema.getProperObj(rawObj);
           if (this.checkArrayValueIsEmpty(value)) properObj = { ...properObj, [key]: [] }
@@ -84,20 +88,19 @@
 
 
     addId(properObj, rawObj) { //Private //Needs Checking
+      function IdObj(id, dbMain, dbFragment) {
+        this.id = id
+        this.dbMain = dbMain;
+        this.dbFragment = dbFragment;
+      }
       const { id } = this.options;
       const { dbMain, dbFragment } = rawObj;
       console.log(this.options)
       const _id = properObj[id];
       if (!_id) return
       properObj.id = _id;
-      properObj._id = new this.IdObj(_id, dbMain, dbFragment);
+      properObj._id = new IdObj(_id, dbMain, dbFragment);
       console.log(properObj._id)
-    }
-
-    IdObj(id, dbMain, dbFragment) {
-      this.id = id
-      this.dbMain = dbMain;
-      this.dbFragment = dbFragment;
     }
 
     addKey(properObj, rawObj) {  //Private
@@ -141,7 +144,6 @@
 
     augmentMethodsToEntryObj(entry) {
       const { dbSplit } = this.schema.map;
-      const { IdObj } = this.schema;
       const update_ = this.updateEntry.bind(this);
       const pull_ = this.pullFromEntry.bind(this);
       const delete_ = this.deleteById.bind(this);
@@ -270,6 +272,7 @@
     }
 
     findByKey(key) {
+      observer.inORM = true
       const { dbMain, dbFragment } = this.options;
       let entry = this.assembleFromDBByKey(key, { dbMain, dbFragment });
       if (entry !== null) this.augmentMethodsToEntryObj(entry)

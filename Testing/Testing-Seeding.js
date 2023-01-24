@@ -1,9 +1,11 @@
 ; (function (root, factory) {
-  root.SEED = factory()
+  root.TEST_SEEDING = factory()
 })(this, function () {
 
-  const { imp, Toolkit, TRIGGERS_MANAGER, REFERENCES_MANAGER } = CCLIBRARIES
-  const { startConnection, clearDB } = ORM
+// This is a Test Library used to test Data Refit and also Seeding this into the DB through the router, controller and then the ORM (Tests Router, Controller, ORM and DBHandler)
+
+  const { imp, Toolkit, REFERENCES_MANAGER } = CCLIBRARIES
+  const { startConnection, clearDB, saveDB } = ORM
 
   const MASTER_INDEX_FILE_ID = "1ohC9kPnMxyptp8SadRBGAofibGiYTTev";
   const TARGETED_BRANCHES = ["Events"]
@@ -14,54 +16,44 @@
   let referencesObj;
   let sourcesIndex;
   let sourcesUpdateObj = {};
+  const DUMP_ID = "1Myh_Uh8lnY1QNf7wA9d68KimOYswL6HU";
+  let dump = []
 
   let n = 1;
 
-  function run() {
-    startTriggers();
+  function createDump() {
+    // Tests mainly for the data refit and then adds the file into a temp "dump it" file
     getReferences();
     const aggregatedSources = extractSources(); // Get sources data from sources file and read sources
-    dbStart();
     aggregatedSources.forEach((sourceObj) => {
       if (sourceObj.eventIndex > n) return;
       processSource(sourceObj)
     }); // Process Every source
     augmentToSourcesIndex();
     Toolkit.writeToJSON(DUMP_ID, dump)
-    saveSourcesIndex();
-    stopTriggers()
   }
 
-  function clearCache() {
-    stopTriggers()
+  function seedDump() {
+    getReferences();
+    dbStart();
+    dump = Toolkit.readFromJSON(DUMP_ID);
+    dump.forEach((entry, i) => {
+      GSCRIPT_ROUTER.route({path:"handleCompiledApplicationRequest", ...entry});
+      console.log(`saved!`)
+    })
+    saveDB()
+    console.log(`Done dumping!`)
   }
 
   function reset() {
     getReferences();
-    resetSourcesIndex();
-    dbClear();
-    saveSourcesIndex();
-  }
-
-  function resetSourcesIndex() {
-    Object.entries(sourcesIndex).forEach(([branchName, allDivisionObj]) => {
-      Object.entries(allDivisionObj).forEach(([divisionName, allActivitiesArray]) => {
-        allActivitiesArray.forEach((sourceObj, i) => {
-          sourcesIndex[branchName][divisionName][i].counter = 0;
-          sourcesIndex[branchName][divisionName][i].seeded = false;
-        })
-      })
-    })
+    dbStart();
+    clearDB();
   }
 
   function getReferences() {
     getRequiredIndexes();
     getSourcesIndex();
-  }
-
-  function dbClear() {
-    dbStart();
-    clearDB();
   }
 
   function dbStart() {
@@ -76,19 +68,6 @@
 
   function getSourcesIndex() {
     sourcesIndex = referencesObj.sourcesIndexed.fileContent;
-  }
-
-  function saveSourcesIndex() {
-    referencesObj.sourcesIndexed.update();
-  }
-
-  function startTriggers() {
-    TRIGGERS_MANAGER.setContinutaionTrigger("run");
-    sourcesUpdateObj = TRIGGERS_MANAGER.getContVariable("sourcesUpdateObj") || {};
-  }
-
-  function stopTriggers() {
-    TRIGGERS_MANAGER.deleteContinuationTrigger("run");
   }
 
   function extractSources() {
@@ -149,7 +128,7 @@
     entries.slice(counter).forEach((entry, i) => {
       console.log(entry);
       const cleanEntry = DATA_REFIT.refitToCompoundRequest(sourceObj, entry);
-      GSCRIPT_ROUTER.route(primaryClassifierCode, cleanEntry);
+      dump.push(cleanEntry);
       addToCounters(primaryClassifierCode, eventIndex, i);
     })
     markSourceAsDone(primaryClassifierCode, eventIndex);
@@ -180,12 +159,10 @@
 
   function addToCounters(primaryClassifierCode, eventIndex, i) {
     sourcesUpdateObj[primaryClassifierCode][eventIndex].counter = i + 1;
-    TRIGGERS_MANAGER.addContVariable("sourcesUpdateObj", sourcesUpdateObj);
   }
 
   function markSourceAsDone(primaryClassifierCode, eventIndex) {
     sourcesUpdateObj[primaryClassifierCode][eventIndex].seeded = true;
-    TRIGGERS_MANAGER.addContVariable("sourcesUpdateObj", sourcesUpdateObj);
   }
 
   function augmentToSourcesIndex() {
@@ -204,21 +181,21 @@
   }
 
   return {
-    run,
+    createDump,
     reset,
-    clearCache
+    seedDump
   }
 
 })
 
-function run() {
-  SEED.run();
+function createDump() {
+  TEST_SEEDING.createDump();
 }
 
-function seedReset() {
-  SEED.reset();
+function seedDump() {
+  TEST_SEEDING.seedDump();
 }
 
-function seedClearCache() {
-  SEED.clearCache();
+function reset() {
+  TEST_SEEDING.reset();
 }

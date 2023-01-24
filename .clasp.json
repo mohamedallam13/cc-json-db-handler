@@ -1,13 +1,18 @@
 {
     "scriptId": "1okytPXaZ1vJMeFsOWA8AbhXdVRTu0CtijoIzrKFaIqvlIwaQZy5qZ1-a",
     "filePushOrder": [
-        "DBHandler.js",
-        "ORM.js",
-        "Models- Applications.js",
-        "Models- CCOne.js",
-        "Models- Confessions.js",
-        "API.js",
-        "Data Clean.js",
-        "Seed.js"
+        "JSON-DB/DBHandler.js",
+        "ODM/ORM.js",
+        "Models/Models-Applications.js",
+        "Models/Models-CCOne.js",
+        "Models/Models-Confessions.js",
+        "Routes/Router-GScript.js",
+        "Seeding/Data-Refit.js",
+        "Seeding/Seed.js",
+        "Testing/Testing-JSON-DB.js",
+        "Testing/Testing-ODM.js",
+        "Testing/Testing-Controller.js",
+        "Testing/Testing-Seeding.js",
+        "Server.js"
     ]
 }

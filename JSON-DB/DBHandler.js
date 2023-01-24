@@ -199,7 +199,6 @@
     }
 
     function lookUpByKey(key, { dbMain, dbFragment }) {
-
       if (dbMain && !dbFragment) return lookUpByKeyQueryArray(key, dbMain);
       return lookUpInFragmentByKey(key, dbMain, dbFragment);
     }

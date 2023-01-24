@@ -1,9 +1,9 @@
 ; (function (root, factory) {
-  root.DUMP_IT = factory()
+  root.SEED = factory()
 })(this, function () {
 
-  const { imp, Toolkit, REFERENCES_MANAGER } = CCLIBRARIES
-  const { startConnection, clearDB, saveDB } = ORM
+  const { imp, Toolkit, TRIGGERS_MANAGER, REFERENCES_MANAGER } = CCLIBRARIES
+  const { startConnection, clearDB } = ORM
 
   const MASTER_INDEX_FILE_ID = "1ohC9kPnMxyptp8SadRBGAofibGiYTTev";
   const TARGETED_BRANCHES = ["Events"]
@@ -11,45 +11,59 @@
 
   const REQUIRED_REFERENCES = ["CCJSONsDBSuperIndex", "sourcesIndexed"];
 
+  const SETDURATION = 28 //mins
+
   let referencesObj;
   let sourcesIndex;
   let sourcesUpdateObj = {};
-  const DUMP_ID = "1Myh_Uh8lnY1QNf7wA9d68KimOYswL6HU";
-  let dump = []
+  let startTime
 
   let n = 1;
 
-  function createDump() {
+  function run() {
+    startTriggers();
     getReferences();
     const aggregatedSources = extractSources(); // Get sources data from sources file and read sources
+    dbStart();
     aggregatedSources.forEach((sourceObj) => {
       if (sourceObj.eventIndex > n) return;
       processSource(sourceObj)
     }); // Process Every source
     augmentToSourcesIndex();
-    Toolkit.writeToJSON(DUMP_ID, dump)
+    saveSourcesIndex();
+    stopTriggers()
   }
 
-  function seedDump() {
-    getReferences();
-    dbStart();
-    dump = Toolkit.readFromJSON(DUMP_ID);
-    dump.forEach((entry,i) => {
-      GSCRIPT_ROUTER.route("handleCompiledApplicationRequest", entry);
-      console.log(`saved!`)
-    })
-    saveDB()
-    console.log(`Done dumping!`)
+  function clearCache() {
+    stopTriggers()
   }
 
   function reset() {
-    dbStart();
-    clearDB();
+    getReferences();
+    resetSourcesIndex();
+    dbClear();
+    saveSourcesIndex();
+  }
+
+  function resetSourcesIndex() {
+    Object.entries(sourcesIndex).forEach(([branchName, allDivisionObj]) => {
+      Object.entries(allDivisionObj).forEach(([divisionName, allActivitiesArray]) => {
+        allActivitiesArray.forEach((sourceObj, i) => {
+          sourcesIndex[branchName][divisionName][i].counter = 0;
+          sourcesIndex[branchName][divisionName][i].seeded = false;
+        })
+      })
+    })
   }
 
   function getReferences() {
     getRequiredIndexes();
     getSourcesIndex();
+  }
+
+  function dbClear() {
+    dbStart();
+    clearDB();
   }
 
   function dbStart() {
@@ -64,6 +78,20 @@
 
   function getSourcesIndex() {
     sourcesIndex = referencesObj.sourcesIndexed.fileContent;
+  }
+
+  function saveSourcesIndex() {
+    referencesObj.sourcesIndexed.update();
+  }
+
+  function startTriggers() {
+    startTime = new Date();
+    TRIGGERS_MANAGER.setContinutaionTrigger("run");
+    sourcesUpdateObj = TRIGGERS_MANAGER.getContVariable("sourcesUpdateObj") || {};
+  }
+
+  function stopTriggers() {
+    TRIGGERS_MANAGER.deleteContinuationTrigger("run");
   }
 
   function extractSources() {
@@ -124,8 +152,9 @@
     entries.slice(counter).forEach((entry, i) => {
       console.log(entry);
       const cleanEntry = DATA_REFIT.refitToCompoundRequest(sourceObj, entry);
-      dump.push(cleanEntry);
+      GSCRIPT_ROUTER.route({ path: "handleCompiledApplicationRequest", ...cleanEntry });
       addToCounters(primaryClassifierCode, eventIndex, i);
+      checkTime()
     })
     markSourceAsDone(primaryClassifierCode, eventIndex);
   }
@@ -155,10 +184,12 @@
 
   function addToCounters(primaryClassifierCode, eventIndex, i) {
     sourcesUpdateObj[primaryClassifierCode][eventIndex].counter = i + 1;
+    TRIGGERS_MANAGER.addContVariable("sourcesUpdateObj", sourcesUpdateObj);
   }
 
   function markSourceAsDone(primaryClassifierCode, eventIndex) {
     sourcesUpdateObj[primaryClassifierCode][eventIndex].seeded = true;
+    TRIGGERS_MANAGER.addContVariable("sourcesUpdateObj", sourcesUpdateObj);
   }
 
   function augmentToSourcesIndex() {
@@ -176,22 +207,28 @@
     })
   }
 
+  function checkTime() {
+    const nowTime = new Date();
+    duration = (nowTime - startTime) / 60000;
+    if (duration > SETDURATION) throw "Forced Timeout!"
+  }
+
   return {
-    createDump,
+    run,
     reset,
-    seedDump
+    clearCache
   }
 
 })
 
-function createDump() {
-  DUMP_IT.createDump();
+function run() {
+  SEED.run();
 }
 
-function seedDump() {
-  DUMP_IT.seedDump();
+function seedReset() {
+  SEED.reset();
 }
 
-function reset() {
-  DUMP_IT.clearCache();
+function seedClearCache() {
+  SEED.clearCache();
 }
