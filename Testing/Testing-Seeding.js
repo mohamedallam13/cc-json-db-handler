@@ -8,8 +8,8 @@
   const { startConnection, clearDB, saveDB } = ORM
 
   const MASTER_INDEX_FILE_ID = "1ohC9kPnMxyptp8SadRBGAofibGiYTTev";
-  const TARGETED_BRANCHES = ["Events"]
-  const TARGETED_DIVISIONS = ["CCG"];
+  const TARGETED_BRANCHES = ["Events", "Activities"]
+  const TARGETED_DIVISIONS = ["CCG","CCT", "CCST", "CCL", "CCAG","CCPSCC", "CCME"];
 
   const REQUIRED_REFERENCES = ["CCJSONsDBSuperIndex", "sourcesIndexed"];
 
@@ -19,30 +19,41 @@
   const DUMP_ID = "1Myh_Uh8lnY1QNf7wA9d68KimOYswL6HU";
   let dump = []
 
-  let n = 1;
+  let n = 100;
 
   function createDump() {
     // Tests mainly for the data refit and then adds the file into a temp "dump it" file
+    console.time("Clean Entries")
     getReferences();
     const aggregatedSources = extractSources(); // Get sources data from sources file and read sources
     aggregatedSources.forEach((sourceObj) => {
       if (sourceObj.eventIndex > n) return;
+      // if(sourceObj.eventIndex == 14){
+      //   const stop = true;
+      // }
       processSource(sourceObj)
     }); // Process Every source
     augmentToSourcesIndex();
     Toolkit.writeToJSON(DUMP_ID, dump)
+    console.timeEnd("Clean Entries")
   }
 
   function seedDump() {
+    console.time("Seeding")
     getReferences();
     dbStart();
     dump = Toolkit.readFromJSON(DUMP_ID);
     dump.forEach((entry, i) => {
+      // if(i == 0) return
+      // if(entry.userRequest.email == "NO_EMAIL_1433586969000"){
+      //   const stop = 2
+      // }
       GSCRIPT_ROUTER.route({path:"handleCompiledApplicationRequest", ...entry});
-      console.log(`saved!`)
+      // console.log(`saved!`)
     })
     saveDB()
     console.log(`Done dumping!`)
+    console.timeEnd("Seeding")
   }
 
   function reset() {
@@ -126,7 +137,7 @@
     const { entries, primaryClassifierCode, eventIndex } = sourceObj;
     const { counter } = sourcesUpdateObj[primaryClassifierCode][eventIndex]
     entries.slice(counter).forEach((entry, i) => {
-      console.log(entry);
+      // console.log(entry);
       const cleanEntry = DATA_REFIT.refitToCompoundRequest(sourceObj, entry);
       dump.push(cleanEntry);
       addToCounters(primaryClassifierCode, eventIndex, i);

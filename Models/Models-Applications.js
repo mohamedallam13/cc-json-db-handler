@@ -86,6 +86,8 @@
 
   const applicationCommentsSchema = new Schema(applicationCommentsSchemaMap)
 
+  /////////////////////////////////////////////////////////// AGGREGATED SCHEMAS FOR EACH EVENT / ACTIVITY
+
   const gatheringApplicationSchemaMap = {
     timestamp: {
       defaultValue: timestampCreate()

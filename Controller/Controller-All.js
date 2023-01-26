@@ -19,29 +19,44 @@
     }
 
     function handleCompiledApplicationRequest({ userRequest, applicationRequest }) {
+      // if(userRequest.email == "shaalano@hotmail.com" && userRequest.fillCheck == false){
+      //   const stop = true
+      // }
       let ccer = getCCerByEmail(userRequest);
       let application = getApplicationByEmail(applicationRequest);
       const { fillCheck } = userRequest;
       if (!application) {
+        // If no application found, create one
         application = createNewApplication(applicationRequest);
       } else {
+        // If an appplication already made, update it
         application = addNewEntryToExistingApplication(applicationRequest, application);
       }
       if (!ccer) {
-        ccer = createNewCCer({ ...userRequest, role: 'applicant' });
+        // if no user if found, create one as long as he has a filled application, if no filled application then warn and do not create anything
         if (!fillCheck) {
-          warn(application.email);
-        }
+            warn(userRequest.email)
+            console.log(applicationRequest.divisionId, applicationRequest.eventId)
+          }else {
+            ccer = createNewCCer({ ...userRequest, role: 'applicant' });
+          }
+
       } else {
-        if (checkRole(ccer, "applicant") && !fillCheck) { // Check roles
-          warn(applicationObj.email);
+        // if there is a user already, were they applicants? if yes update, if no warn and do not create anything
+        const roleCheckIfApplicant = checkRole(ccer, "applicant");
+        if (roleCheckIfApplicant == false && fillCheck == false) { // Check roles
+          warn(userRequest.email);
+          console.log(applicationRequest.divisionId, applicationRequest.eventId)
         } else {
           ccer = addNewEntryToExistingCCer(userRequest, ccer);
         }
       }
-      ccer = addApplicationToCCer(ccer, application)
-      application = addCCerToApplication(application, ccer)
-      console.log(`Compiled application request handled successfully!`)
+      if(ccer){
+        // after all of that, if there is a user created or already existed, add the application to it
+          ccer = addApplicationToCCer(ccer, application)
+          application = addCCerToApplication(application, ccer)
+          // console.log(`Compiled application request handled successfully!`)
+      }
     }
 
     function checkRole(ccer, role) {
@@ -68,7 +83,6 @@
     }
 
     function getApplicationByEmail(request) {
-      observer.inController = true
       const { email, divisionId, eventId } = request;
       checkFragmentModel(divisionId, eventId);
       return CCAPPLICATION[divisionId][eventId].findByKey(email);
@@ -106,6 +120,9 @@
     }
 
     function createNewCCer(request) {
+      // if(request.email == "NO_EMAIL_1433586969000"){
+      //   const stop = 2
+      // }
       return CCER.create(request)
     }
 
@@ -132,7 +149,6 @@
 
     function addApplicationToCCer(ccer, application) {
       const applicationId = application._id
-      console.log(applicationId)
       const { id } = applicationId;
       const idIncludedCheck = ccer.checkArrayParameterFor("applicationsArr", function (activityEntry) { return activityEntry.applicationId.id == id });
       if (idIncludedCheck) return ccer
@@ -157,8 +173,8 @@
       return CCAPPLICATION[divisionId][eventId].findByKey(email).update({ status }, ["statusArr"])
     }
 
-    function warn() {
-
+    function warn(email) {
+        console.log(`Warning ${email}!`)
     }
 
     function checkFragmentModel(divisionId, eventId) {

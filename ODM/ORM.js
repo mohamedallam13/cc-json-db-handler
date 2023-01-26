@@ -95,12 +95,10 @@
       }
       const { id } = this.options;
       const { dbMain, dbFragment } = rawObj;
-      console.log(this.options)
       const _id = properObj[id];
       if (!_id) return
       properObj.id = _id;
       properObj._id = new IdObj(_id, dbMain, dbFragment);
-      console.log(properObj._id)
     }
 
     addKey(properObj, rawObj) {  //Private
@@ -300,7 +298,6 @@
       const getProperObj_ = getProperObj.bind(this.schema);
       const getSplitObj_ = getSplitObj.bind(this.schema);
       const updateObj = getProperObj_(request, updateParam);
-      console.log(updateObj)
       Object.entries(updateObj).forEach(([key, value]) => {
         if (Array.isArray(value)) entry[key] = [...updateObj[key], ...entry[key]];
         else entry[key] = updateObj[key]

@@ -113,6 +113,7 @@
             type: "string"
         },
         age: {
+           defaultValue: 0,
             type: "number"
         },
         martialStatus: {

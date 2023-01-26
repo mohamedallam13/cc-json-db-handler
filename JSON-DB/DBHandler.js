@@ -6,7 +6,7 @@
 
   const { Toolkit } = CCLIBRARIES
 
-  const MAX_ENTRIES_COUNT = 100;
+  const MAX_ENTRIES_COUNT = 1000;
 
   function init(indexFileId) {
     if (!indexFileId) return null
@@ -390,7 +390,7 @@
       let newFragment
       if (!lastDBFragment) newFragment = dbMain + "_1";
       else if (countingRegex.test(lastDBFragment)) {
-        console.log(lastDBFragment.match(countingRegex)[0][1])
+        // console.log(lastDBFragment.match(countingRegex)[0][1])
         let count = parseInt(lastDBFragment.match(countingRegex)[0][1]);
         count++;
         newFragment = lastDBFragment.replace(countingRegex, "") + "_" + count;

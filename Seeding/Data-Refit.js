@@ -19,6 +19,9 @@
   }
 
   function getUserRequest(sourceObj, processedHeaders, entry) {
+    // if(entry["Email"] == "shadi_ashraf@icloud.com"){
+    //   const stop = "4"
+    // }
     const userRequestObj = {};
     getBLabeledData(userRequestObj, sourceObj, processedHeaders, entry);
     refitUserData(userRequestObj);
@@ -32,6 +35,9 @@
     Object.entries(map).forEach(([mainHeader, equivalentHeader]) => {
       if (!mainHeader.includes("_b") && !mainHeader.includes("_a")) return
       if (!entry[equivalentHeader]) return
+      if (mainHeader == "-Facebook_b" && entry[equivalentHeader]) {
+        const stop = 1
+      }
       const cleanMainHeader = toCamelCase(mainHeader.replace(/_b/g, "").replace(/_a/g, ""));
       userRequestObj[cleanMainHeader] = entry[equivalentHeader];
       processedHeaders.push(equivalentHeader);
@@ -81,6 +87,7 @@
 
   function getFillCheck(request) {
     if (request.firstName && request.gender) request.fillCheck = true
+    else request.fillCheck = false
   }
 
   function refitUserData(entry) {
@@ -91,6 +98,7 @@
     refitAddress(entry);
     refitMajor(entry);
     refitMobile(entry);
+    refitBanned(entry);
   }
 
   function refitApplicationData(entry) {
@@ -100,14 +108,17 @@
   }
 
   function refitTimestamp_(entry) {
+    if(!entry.timestamp){
+      const stop = true
+    }
     entry.timestamp = refitTimestamp(entry.timestamp)
   }
 
   /////////////////////////////Refiting Name;
 
   function refitName(entry) {
-    entry.firstName = toTitleCase(entry.firstName);
-    entry.lastName = toTitleCase(entry.lastName);
+    if (entry.firstName) entry.firstName = toTitleCase(entry.firstName);
+    if (entry.lastName) entry.lastName = toTitleCase(entry.lastName);
   }
 
   function refitDateOfBirth(entry) {
@@ -145,6 +156,7 @@
     if (!entry.addressDistrict || entry.addressDistrict == '') {
       var pre = entry.address ? entry.address + ", " : "";
       entry.addressDistrict = pre + entry.district
+      if (entry.addressDistrict == "undefined") delete entry.addressDistrict
     }
     delete entry.district;
     delete entry.address;
@@ -174,14 +186,16 @@
   function refitEmail(entry) {
     removeDefaultEmail(entry);
     var emailA = entry.email;
-    var emailB = entry["-email"];
+    var emailB = checkEmailInFacebookField(entry.facebook);
+    // if (emailB) {
+    //   var stop = 1
+    // }
     if (!emailA && !emailB) {
       getAnonEmail(entry);
     } else if (!emailA || typeof emailA === "undefined" || emailA == "") {
-      delete entry["-email"];
-      entry.email = emailB.toString().toLowerCase();
+      entry.email = emailB.toString().toLowerCase().replace(/\s/g, '');
     } else {
-      entry.email = emailA.toString().toLowerCase();
+      entry.email = emailA.toString().toLowerCase().replace(/\s/g, '');
     }
   }
 
@@ -200,9 +214,24 @@
     }
   }
 
+  function checkEmailInFacebookField(fbLink) {
+    if (!fbLink) return
+    if (!fbLink.includes("@")) return
+    return fbLink
+  }
+
+  /////////////////////////////Refiting Mobile;
+
   function refitMobile(entry) {
     entry.mobile = refitProperMobileNumber(entry.mobile)
   }
+
+  /////////////////////////////Refiting Banned;
+
+  function refitBanned(entry) {
+    entry.banned = entry.banned == "No" ? true : false;
+  }
+
 
   return {
     refitToCompoundRequest

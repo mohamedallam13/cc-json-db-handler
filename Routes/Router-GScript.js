@@ -69,7 +69,7 @@
   function route({ path, ...request }) {
     if (!Router[path]) throw `Path (${path})does not exist!`
     response.data = Router[path](request);
-    console.log(response.data)
+    // console.log(response.data)
     response.sucess = true;
     response.code = 200;
 
